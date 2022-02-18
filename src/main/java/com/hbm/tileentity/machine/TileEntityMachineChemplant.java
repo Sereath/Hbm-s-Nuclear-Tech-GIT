@@ -4,15 +4,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
 import com.hbm.interfaces.IFluidSource;
+import com.hbm.interfaces.Spaghetti;
 import com.hbm.inventory.FluidStack;
 import com.hbm.inventory.FluidTank;
-import com.hbm.inventory.MachineRecipes;
 import com.hbm.inventory.UpgradeManager;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
+import com.hbm.inventory.recipes.MachineRecipes;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemChemistryTemplate;
 import com.hbm.items.machine.ItemMachineUpgrade.UpgradeType;
@@ -22,8 +23,12 @@ import com.hbm.packet.AuxParticlePacket;
 import com.hbm.packet.LoopedSoundPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.packet.TEChemplantPacket;
+import com.hbm.tileentity.machine.storage.TileEntityCrateIron;
+import com.hbm.tileentity.machine.storage.TileEntityCrateSteel;
+import com.hbm.util.ItemStackUtil;
 
 import api.hbm.energy.IBatteryItem;
+import api.hbm.energy.IEnergyUser;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -39,7 +44,7 @@ import net.minecraft.tileentity.TileEntityHopper;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraftforge.oredict.OreDictionary;
 
-public class TileEntityMachineChemplant extends TileEntity implements ISidedInventory, IConsumer, IFluidContainer, IFluidAcceptor, IFluidSource {
+public class TileEntityMachineChemplant extends TileEntity implements ISidedInventory, IEnergyUser, IFluidContainer, IFluidAcceptor, IFluidSource {
 
 	private ItemStack slots[];
 
@@ -62,10 +67,10 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 	public TileEntityMachineChemplant() {
 		slots = new ItemStack[21];
 		tanks = new FluidTank[4];
-		tanks[0] = new FluidTank(FluidType.NONE, 24000, 0);
-		tanks[1] = new FluidTank(FluidType.NONE, 24000, 1);
-		tanks[2] = new FluidTank(FluidType.NONE, 24000, 2);
-		tanks[3] = new FluidTank(FluidType.NONE, 24000, 3);
+		tanks[0] = new FluidTank(Fluids.NONE, 24000, 0);
+		tanks[1] = new FluidTank(Fluids.NONE, 24000, 1);
+		tanks[2] = new FluidTank(Fluids.NONE, 24000, 2);
+		tanks[3] = new FluidTank(Fluids.NONE, 24000, 3);
 	}
 
 	@Override
@@ -242,24 +247,26 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 	
 	@Override
 	public void updateEntity() {
-		
-		this.consumption = 100;
-		this.speed = 100;
-		
-		UpgradeManager.eval(slots, 1, 3);
-
-		int speedLevel = Math.min(UpgradeManager.getLevel(UpgradeType.SPEED), 3);
-		int powerLevel = Math.min(UpgradeManager.getLevel(UpgradeType.POWER), 3);
-		int overLevel = UpgradeManager.getLevel(UpgradeType.OVERDRIVE);
-		
-		speed -= speedLevel * 25;
-		consumption += speedLevel * 300;
-		speed += powerLevel * 5;
-		consumption -= powerLevel * 30;
-		speed /= (overLevel + 1);
-		consumption *= (overLevel + 1);
 
 		if(!worldObj.isRemote) {
+			
+			this.updateConnections();
+			
+			this.consumption = 100;
+			this.speed = 100;
+			
+			UpgradeManager.eval(slots, 1, 3);
+
+			int speedLevel = Math.min(UpgradeManager.getLevel(UpgradeType.SPEED), 3);
+			int powerLevel = Math.min(UpgradeManager.getLevel(UpgradeType.POWER), 3);
+			int overLevel = UpgradeManager.getLevel(UpgradeType.OVERDRIVE);
+			
+			speed -= speedLevel * 25;
+			consumption += speedLevel * 300;
+			speed += powerLevel * 5;
+			consumption -= powerLevel * 30;
+			speed /= (overLevel + 1);
+			consumption *= (overLevel + 1);
 			
 			isProgressing = false;
 			
@@ -437,6 +444,35 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 		}
 		
 	}
+	
+	private void updateConnections() {
+		this.getBlockMetadata();
+		
+		if(this.blockMetadata == 5) {
+			this.trySubscribe(worldObj, xCoord - 2, yCoord, zCoord, Library.NEG_X);
+			this.trySubscribe(worldObj, xCoord - 2, yCoord, zCoord + 1, Library.NEG_X);
+			this.trySubscribe(worldObj, xCoord + 3, yCoord, zCoord, Library.POS_X);
+			this.trySubscribe(worldObj, xCoord + 3, yCoord, zCoord + 1, Library.POS_X);
+			
+		} else if(this.blockMetadata == 3) {
+			this.trySubscribe(worldObj, xCoord, yCoord, zCoord - 2, Library.NEG_Z);
+			this.trySubscribe(worldObj, xCoord - 1, yCoord, zCoord - 2, Library.NEG_Z);
+			this.trySubscribe(worldObj, xCoord, yCoord, zCoord + 3, Library.POS_Z);
+			this.trySubscribe(worldObj, xCoord - 1, yCoord, zCoord + 3, Library.POS_Z);
+			
+		} else if(this.blockMetadata == 4) {
+			this.trySubscribe(worldObj, xCoord + 2, yCoord, zCoord, Library.POS_X);
+			this.trySubscribe(worldObj, xCoord + 2, yCoord, zCoord - 1, Library.POS_X);
+			this.trySubscribe(worldObj, xCoord - 3, yCoord, zCoord, Library.NEG_X);
+			this.trySubscribe(worldObj, xCoord - 3, yCoord, zCoord - 1, Library.NEG_X);
+			
+		} else if(this.blockMetadata == 2) {
+			this.trySubscribe(worldObj, xCoord, yCoord, zCoord + 2, Library.POS_Z);
+			this.trySubscribe(worldObj, xCoord + 1, yCoord, zCoord + 2, Library.POS_Z);
+			this.trySubscribe(worldObj, xCoord, yCoord, zCoord - 3, Library.NEG_Z);
+			this.trySubscribe(worldObj, xCoord + 1, yCoord, zCoord - 3, Library.NEG_Z);
+		}
+	}
 
 	public boolean tryExchangeTemplates(TileEntity te1, TileEntity te2) {
 		//validateTe sees if it's a valid inventory tile entity
@@ -509,10 +545,10 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 			FluidStack[] inputs = MachineRecipes.getFluidInputFromTempate(slots[4]);
 			FluidStack[] outputs = MachineRecipes.getFluidOutputFromTempate(slots[4]);
 
-			tanks[0].setTankType(inputs[0] == null ? FluidType.NONE : inputs[0].type);
-			tanks[1].setTankType(inputs[1] == null ? FluidType.NONE : inputs[1].type);
-			tanks[2].setTankType(outputs[0] == null ? FluidType.NONE : outputs[0].type);
-			tanks[3].setTankType(outputs[1] == null ? FluidType.NONE : outputs[1].type);
+			tanks[0].setTankType(inputs[0] == null ? Fluids.NONE : inputs[0].type);
+			tanks[1].setTankType(inputs[1] == null ? Fluids.NONE : inputs[1].type);
+			tanks[2].setTankType(outputs[0] == null ? Fluids.NONE : outputs[0].type);
+			tanks[3].setTankType(outputs[1] == null ? Fluids.NONE : outputs[1].type);
 		}
 	}
 	
@@ -548,34 +584,35 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 			tanks[1].setFill(tanks[1].getFill() - fluids[1].fill);
 	}
 	
+	@Spaghetti("what the fuck am i looking at")
 	public boolean hasSpaceForItems(ItemStack[] stacks) {
 		if(stacks == null)
 			return true;
 		if(stacks != null && Library.isArrayEmpty(stacks))
 			return true;
 
-		ItemStack sta0 = Library.carefulCopy(slots[5]);
+		ItemStack sta0 = ItemStackUtil.carefulCopy(slots[5]);
 		if(sta0 != null)
 			sta0.stackSize = 1;
-		ItemStack sta1 = Library.carefulCopy(stacks[0]);
+		ItemStack sta1 = ItemStackUtil.carefulCopy(stacks[0]);
 		if(sta1 != null)
 			sta1.stackSize = 1;
-		ItemStack sta2 = Library.carefulCopy(slots[6]);
+		ItemStack sta2 = ItemStackUtil.carefulCopy(slots[6]);
 		if(sta2 != null)
 			sta2.stackSize = 1;
-		ItemStack sta3 = Library.carefulCopy(stacks[1]);
+		ItemStack sta3 = ItemStackUtil.carefulCopy(stacks[1]);
 		if(sta3 != null)
 			sta3.stackSize = 1;
-		ItemStack sta4 = Library.carefulCopy(slots[7]);
+		ItemStack sta4 = ItemStackUtil.carefulCopy(slots[7]);
 		if(sta4 != null)
 			sta4.stackSize = 1;
-		ItemStack sta5 = Library.carefulCopy(stacks[2]);
+		ItemStack sta5 = ItemStackUtil.carefulCopy(stacks[2]);
 		if(sta5 != null)
 			sta5.stackSize = 1;
-		ItemStack sta6 = Library.carefulCopy(slots[8]);
+		ItemStack sta6 = ItemStackUtil.carefulCopy(slots[8]);
 		if(sta6 != null)
 			sta6.stackSize = 1;
-		ItemStack sta7 = Library.carefulCopy(stacks[3]);
+		ItemStack sta7 = ItemStackUtil.carefulCopy(stacks[3]);
 		if(sta7 != null)
 			sta7.stackSize = 1;
 		
@@ -870,19 +907,19 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index < 4 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index < 4 && tanks[index] != null)
 			tanks[index].setTankType(type);
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(i);
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -908,7 +945,7 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -978,16 +1015,5 @@ public class TileEntityMachineChemplant extends TileEntity implements ISidedInve
 			list1.clear();
 		if(type.name().equals(tanks[3].getTankType().name()))
 			list2.clear();
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		list.add(tanks[2]);
-		list.add(tanks[3]);
-		
-		return list;
 	}
 }

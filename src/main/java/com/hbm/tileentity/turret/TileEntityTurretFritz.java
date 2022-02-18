@@ -5,9 +5,10 @@ import java.util.List;
 
 import com.hbm.handler.BulletConfigSyncingUtil;
 import com.hbm.handler.BulletConfiguration;
-import com.hbm.handler.FluidTypeHandler.FluidType;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.packet.AuxParticlePacketNT;
 import com.hbm.packet.PacketDispatcher;
@@ -22,7 +23,7 @@ public class TileEntityTurretFritz extends TileEntityTurretBaseNT implements IFl
 	
 	public TileEntityTurretFritz() {
 		super();
-		this.tank = new FluidTank(FluidType.DIESEL, 16000, 0);
+		this.tank = new FluidTank(Fluids.DIESEL, 16000, 0);
 	}
 	
 	@Override
@@ -68,7 +69,7 @@ public class TileEntityTurretFritz extends TileEntityTurretBaseNT implements IFl
 	@Override
 	public void updateFiringTick() {
 		
-		if(this.tank.getTankType() == FluidType.DIESEL && this.tank.getFill() >= 10) {
+		if(this.tank.getTankType() == Fluids.DIESEL && this.tank.getFill() >= 10) {
 			
 			BulletConfiguration conf = BulletConfigSyncingUtil.pullConfig(BulletConfigSyncingUtil.FLA_NORMAL);
 			this.spawnBullet(conf);
@@ -106,13 +107,25 @@ public class TileEntityTurretFritz extends TileEntityTurretBaseNT implements IFl
 			for(int i = 1; i < 10; i++) {
 				
 				if(slots[i] != null && slots[i].getItem() == ModItems.ammo_fuel) {
-					if(this.tank.getTankType() == FluidType.DIESEL && this.tank.getFill() + 1000 <= this.tank.getMaxFill()) {
+					if(this.tank.getTankType() == Fluids.DIESEL && this.tank.getFill() + 1000 <= this.tank.getMaxFill()) {
 						this.tank.setFill(this.tank.getFill() + 1000);
 						this.decrStackSize(i, 1);
 					}
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void readFromNBT(NBTTagCompound nbt) {
+		super.readFromNBT(nbt);
+		this.tank.readFromNBT(nbt, "diesel");
+	}
+	
+	@Override
+	public void writeToNBT(NBTTagCompound nbt) {
+		super.writeToNBT(nbt);
+		this.tank.writeToNBT(nbt, "diesel");
 	}
 
 	@Override
@@ -121,17 +134,17 @@ public class TileEntityTurretFritz extends TileEntityTurretBaseNT implements IFl
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		tank.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		tank.setTankType(type);
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		return type.name().equals(this.tank.getTankType().name()) ? tank.getMaxFill() : 0;
 	}
 
@@ -141,16 +154,8 @@ public class TileEntityTurretFritz extends TileEntityTurretBaseNT implements IFl
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tank.getTankType().name()))
 			tank.setFill(i);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tank);
-		
-		return list;
 	}
 }

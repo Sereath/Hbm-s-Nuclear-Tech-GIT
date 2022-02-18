@@ -6,12 +6,12 @@ import java.util.Random;
 
 import com.hbm.entity.particle.EntitySSmokeFX;
 import com.hbm.entity.particle.EntityTSmokeFX;
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
-import com.hbm.interfaces.ISource;
+import com.hbm.interfaces.Spaghetti;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
 import com.hbm.lib.ModDamageSource;
@@ -20,6 +20,7 @@ import com.hbm.packet.LoopedSoundPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.packet.TETurbofanPacket;
 
+import api.hbm.energy.IEnergyGenerator;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -32,15 +33,14 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 
-public class TileEntityMachineTurbofan extends TileEntity implements ISidedInventory, ISource, IFluidContainer, IFluidAcceptor {
+@Spaghetti("a")
+public class TileEntityMachineTurbofan extends TileEntity implements ISidedInventory, IEnergyGenerator, IFluidContainer, IFluidAcceptor {
 
 	private ItemStack slots[];
 
 	public long power;
 	public int soundCycle = 0;
 	public static final long maxPower = 150000;
-	public int age = 0;
-	public List<IConsumer> list = new ArrayList();
 	public FluidTank tank;
 	Random rand = new Random();
 	public int afterburner;
@@ -55,7 +55,7 @@ public class TileEntityMachineTurbofan extends TileEntity implements ISidedInven
 
 	public TileEntityMachineTurbofan() {
 		slots = new ItemStack[3];
-		tank = new FluidTank(FluidType.KEROSENE, 64000, 0);
+		tank = new FluidTank(Fluids.KEROSENE, 64000, 0);
 	}
 
 	@Override
@@ -229,13 +229,15 @@ public class TileEntityMachineTurbofan extends TileEntity implements ISidedInven
 		}
 		
 		if (!worldObj.isRemote) {
-			age++;
-			if (age >= 20) {
-				age = 0;
-			}
 
-			if (age == 9 || age == 19)
-				ffgeuaInit();
+			this.sendPower(worldObj, this.xCoord + 2, this.yCoord + 1, this.zCoord - 1, Library.POS_X);
+			this.sendPower(worldObj, this.xCoord + 2, this.yCoord + 1, this.zCoord + 1, Library.POS_X);
+			this.sendPower(worldObj, this.xCoord + 1, this.yCoord + 1, this.zCoord + 2, Library.POS_Z);
+			this.sendPower(worldObj, this.xCoord - 1, this.yCoord + 1, this.zCoord + 2, Library.POS_Z);
+			this.sendPower(worldObj, this.xCoord - 2, this.yCoord + 1, this.zCoord + 1, Library.NEG_X);
+			this.sendPower(worldObj, this.xCoord - 2, this.yCoord + 1, this.zCoord - 1, Library.NEG_X);
+			this.sendPower(worldObj, this.xCoord - 1, this.yCoord + 1, this.zCoord - 2, Library.NEG_Z);
+			this.sendPower(worldObj, this.xCoord + 1, this.yCoord + 1, this.zCoord - 2, Library.NEG_Z);
 
 			//Tank Management
 			tank.loadTank(0, 1, slots);
@@ -480,75 +482,43 @@ public class TileEntityMachineTurbofan extends TileEntity implements ISidedInven
 	}
 
 	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord + 2, this.yCoord + 1, this.zCoord - 1, getTact());
-		ffgeua(this.xCoord + 2, this.yCoord + 1, this.zCoord + 1, getTact());
-		ffgeua(this.xCoord + 1, this.yCoord + 1, this.zCoord + 2, getTact());
-		ffgeua(this.xCoord - 1, this.yCoord + 1, this.zCoord + 2, getTact());
-		ffgeua(this.xCoord - 2, this.yCoord + 1, this.zCoord + 1, getTact());
-		ffgeua(this.xCoord - 2, this.yCoord + 1, this.zCoord - 1, getTact());
-		ffgeua(this.xCoord - 1, this.yCoord + 1, this.zCoord - 2, getTact());
-		ffgeua(this.xCoord + 1, this.yCoord + 1, this.zCoord - 2, getTact());
-	}
-
-	@Override
-	public boolean getTact() {
-		if (age >= 0 && age < 10) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public long getSPower() {
+	public long getPower() {
 		return power;
 	}
 
 	@Override
-	public void setSPower(long i) {
+	public long getMaxPower() {
+		return maxPower;
+	}
+
+	@Override
+	public void setPower(long i) {
 		this.power = i;
 	}
 
 	@Override
-	public List<IConsumer> getList() {
-		return list;
-	}
-
-	@Override
-	public void clearList() {
-		this.list.clear();
-	}
-
-	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		tank.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		tank.setTankType(type);
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
-		return type.name().equals(this.tank.getTankType().name()) ? tank.getMaxFill() : 0;
+	public int getMaxFillForReceive(FluidType type) {
+		return type == this.tank.getTankType() ? tank.getMaxFill() : 0;
 	}
 
 	@Override
 	public int getFluidFill(FluidType type) {
-		return type.name().equals(this.tank.getTankType().name()) ? tank.getFill() : 0;
+		return type == this.tank.getTankType() ? tank.getFill() : 0;
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
-		if(type.name().equals(tank.getTankType().name()))
+	public void setFillForTransfer(int i, FluidType type) {
+		if(type == tank.getTankType())
 			tank.setFill(i);
 	}
 	
@@ -562,13 +532,5 @@ public class TileEntityMachineTurbofan extends TileEntity implements ISidedInven
 	public double getMaxRenderDistanceSquared()
 	{
 		return 65536.0D;
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tank);
-		
-		return list;
 	}
 }

@@ -1,15 +1,18 @@
 package com.hbm.blocks.machine;
 
 import com.hbm.blocks.BlockDummyable;
-import com.hbm.handler.FluidTypeHandler.FluidType;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.tileentity.TileEntityProxyCombo;
-import com.hbm.tileentity.machine.TileEntityMachineFractionTower;
+import com.hbm.tileentity.machine.oil.TileEntityMachineFractionTower;
 
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.ChatComponentTranslation;
+import net.minecraft.util.ChatStyle;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
@@ -64,16 +67,16 @@ public class MachineFractionTower extends BlockDummyable {
 					player.addChatComponentMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "=== FRACTIONING TOWER Y:" + pos[1] + " ==="));
 
 					for(int i = 0; i < frac.tanks.length; i++)
-						player.addChatComponentMessage(new ChatComponentText(frac.tanks[i].getTankType() + ": " + frac.tanks[i].getFill() + "/" + frac.tanks[i].getMaxFill() + "mB"));
+						player.addChatComponentMessage(new ChatComponentTranslation("hbmfluid." + frac.tanks[i].getTankType().getName().toLowerCase()).appendSibling(new ChatComponentText(": " + frac.tanks[i].getFill() + "/" + frac.tanks[i].getMaxFill() + "mB")));
 				} else {
 					
 					if(world.getTileEntity(pos[0], pos[1] - 3, pos[2]) instanceof TileEntityMachineFractionTower) {
 						player.addChatComponentMessage(new ChatComponentText(EnumChatFormatting.RED + "You can only change the type in the bottom segment!"));
 					} else {
-						FluidType type = FluidType.values()[player.getHeldItem().getItemDamage()];
+						FluidType type = Fluids.fromID(player.getHeldItem().getItemDamage());
 						frac.tanks[0].setTankType(type);
 						frac.markDirty();
-						player.addChatComponentMessage(new ChatComponentText(EnumChatFormatting.YELLOW + "Changed type to " + type + "!"));
+						player.addChatComponentMessage(new ChatComponentText("Changed type to ").setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)).appendSibling(new ChatComponentTranslation("hbmfluid." + type.getName().toLowerCase())).appendSibling(new ChatComponentText("!")));
 					}
 				}
 				

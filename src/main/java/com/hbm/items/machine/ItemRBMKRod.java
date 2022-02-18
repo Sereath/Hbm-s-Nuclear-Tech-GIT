@@ -2,10 +2,8 @@ package com.hbm.items.machine;
 
 import java.util.List;
 
-import com.hbm.interfaces.IItemHazard;
 import com.hbm.items.ModItems;
 import com.hbm.main.MainRegistry;
-import com.hbm.modules.ItemHazardModule;
 import com.hbm.tileentity.machine.rbmk.IRBMKFluxReceiver.NType;
 import com.hbm.tileentity.machine.rbmk.RBMKDials;
 import com.hbm.util.I18nUtil;
@@ -20,13 +18,14 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.world.World;
 
-public class ItemRBMKRod extends Item implements IItemHazard {
+public class ItemRBMKRod extends Item {
 	
 	public ItemRBMKPellet pellet;
 	public String fullName = "";			//full name of the fuel rod
 	public double reactivity;					//endpoint of the function
 	public double selfRate;					//self-inflicted flux from self-igniting fuels
 	public EnumBurnFunc function = EnumBurnFunc.LOG_TEN;
+	public EnumDepleteFunction depFunc = EnumDepleteFunction.LINEAR;
 	public double xGen = 0.5D;				//multiplier for xenon production
 	public double xBurn = 50D;				//divider for xenon burnup
 	public double heat = 1D;				//heat produced per outFlux
@@ -62,8 +61,6 @@ public class ItemRBMKRod extends Item implements IItemHazard {
 	}
 
 	public ItemRBMKRod(String fullName) {
-		this.module = new ItemHazardModule();
-		
 		this.fullName = fullName;
 		
 		this.setContainerItem(ModItems.rbmk_fuel_empty);
@@ -88,6 +85,11 @@ public class ItemRBMKRod extends Item implements IItemHazard {
 
 	public ItemRBMKRod setFunction(EnumBurnFunc func) {
 		this.function = func;
+		return this;
+	}
+
+	public ItemRBMKRod setDepletionFunction(EnumDepleteFunction func) {
+		this.depFunc = func;
 		return this;
 	}
 
@@ -215,7 +217,8 @@ public class ItemRBMKRod extends Item implements IItemHazard {
 		SIGMOID(EnumChatFormatting.GREEN + "SAFE / SIGMOID"),				//100 / (1 + e^(-(x - 50) / 10)) <- tiny amount of reactivity at x=0 !
 		SQUARE_ROOT(EnumChatFormatting.YELLOW + "MEDIUM / SQUARE ROOT"),	//sqrt(x) * 10 * reactivity
 		LINEAR(EnumChatFormatting.RED + "DANGEROUS / LINEAR"),				//x * reactivity
-		QUADRATIC(EnumChatFormatting.RED + "DANGEROUS / QUADRATIC");		//x^2 / 100 * reactivity
+		QUADRATIC(EnumChatFormatting.RED + "DANGEROUS / QUADRATIC"),		//x^2 / 100 * reactivity
+		EXPERIMENTAL(EnumChatFormatting.RED + "EXPERIMENTAL / SINE SLOPE");		//x * (sin(x) + 1)
 		
 		public String title = "";
 		
@@ -225,22 +228,23 @@ public class ItemRBMKRod extends Item implements IItemHazard {
 	}
 	
 	/**
-	 * @param flux [0;100] ...or at least those are sane levels
+	 * @param reactivity [0;100] ...or at least those are sane levels
 	 * @return the amount of reactivity yielded, unmodified by xenon
 	 */
 	public double reactivityFunc(double in, double enrichment) {
 		
-		double flux = in * enrichment;
+		double flux = in * reativityModByEnrichment(enrichment);
 		
 		switch(this.function) {
 		case PASSIVE: return selfRate * enrichment;
 		case LOG_TEN: return Math.log10(flux + 1) * 0.5D * reactivity;
 		case PLATEU: return (1 - Math.pow(Math.E, -flux / 25D)) * reactivity;
-		case ARCH: return Math.max(flux - (flux * flux / 100000D) / 100D * reactivity, 0D);
+		case ARCH: return Math.max(flux - (flux * flux / 10000D) / 100D * reactivity, 0D);
 		case SIGMOID: return reactivity / (1 + Math.pow(Math.E, -(flux - 50D) / 10D));
 		case SQUARE_ROOT: return Math.sqrt(flux) * reactivity / 10D;
 		case LINEAR: return flux / 100D * reactivity;
 		case QUADRATIC: return flux * flux / 10000D * reactivity;
+		case EXPERIMENTAL: return flux * (Math.sin(flux) + 1) * reactivity;
 		}
 		
 		return 0;
@@ -257,14 +261,35 @@ public class ItemRBMKRod extends Item implements IItemHazard {
 		case PASSIVE: return EnumChatFormatting.RED + "" + selfRate;
 		case LOG_TEN: return "log10(x + 1" + (selfRate > 0 ? (EnumChatFormatting.RED + " + " + selfRate) : "") + EnumChatFormatting.WHITE + ") * 0.5 * " + reactivity;
 		case PLATEU: return "(1 - e^-" + x + " / 25)) * " + reactivity;
-		case ARCH: return "(" + x + " - " + x + "² / 100000) / 100 * " + reactivity + " [0;∞]";
+		case ARCH: return "(" + x + " - " + x + "² / 10000) / 100 * " + reactivity + " [0;∞]";
 		case SIGMOID: return reactivity + " / (1 + e^(-(" + x + " - 50) / 10)";
 		case SQUARE_ROOT: return "sqrt(" + x + ") * " + reactivity + " / 10";
 		case LINEAR: return x + " / 100 * " + reactivity;
 		case QUADRATIC: return x + "² / 10000 * " + reactivity;
+		case EXPERIMENTAL: return x + " * (sin(" + x + ") + 1) * " + reactivity;
 		}
 		
 		return "ERROR";
+	}
+	
+	public static enum EnumDepleteFunction {
+		LINEAR,			//old function
+		RAISING_SLOPE,	//for breeding fuels such as MEU, maximum of 110% at 28% depletion
+		BOOSTED_SLOPE,	//for strong breeding fuels such Th232, maximum of 132% at 64% depletion
+		GENTLE_SLOPE,	//recommended for most fuels, maximum barely over the start, near the beginning
+		STATIC;			//for arcade-style neutron sources
+	}
+	
+	public double reativityModByEnrichment(double enrichment) {
+		
+		switch(this.depFunc) {
+		default:
+		case LINEAR: return enrichment;
+		case STATIC: return 1D;
+		case BOOSTED_SLOPE: return -enrichment + 1 + Math.sin(enrichment * enrichment * Math.PI);
+		case RAISING_SLOPE: return -enrichment + 1 + (Math.sin(enrichment * Math.PI) / 2D);
+		case GENTLE_SLOPE: return -enrichment + 1 + (Math.sin(enrichment * Math.PI) / 3D);
+		}
 	}
 	
 	/**
@@ -361,38 +386,6 @@ public class ItemRBMKRod extends Item implements IItemHazard {
 		list.add(EnumChatFormatting.DARK_RED + "Melting point: " + meltingPoint + "°C");*/
 		
 		super.addInformation(stack, player, list, bool);
-		updateModule(stack);
-		this.module.addInformation(stack, player, list, bool);
-	}
-	
-	@Override
-	public void onUpdate(ItemStack stack, World world, Entity entity, int i, boolean b) {
-		
-		if(entity instanceof EntityLivingBase) {
-			updateModule(stack);
-			this.module.applyEffects((EntityLivingBase) entity, stack.stackSize, i, b);
-		}
-	}
-	
-	@Override
-	public boolean onEntityItemUpdate(EntityItem item) {
-		
-		super.onEntityItemUpdate(item);
-		updateModule(item.getEntityItem());
-		return this.module.onEntityItemUpdate(item);
-	}
-	
-	ItemHazardModule module;
-
-	@Override
-	public ItemHazardModule getModule() {
-		return this.module;
-	}
-	
-	private void updateModule(ItemStack stack) {
-		
-		float mod = (float)(1 + (1 - this.getEnrichment(stack)) * 24 + this.getPoisonLevel(stack) * 100);
-		this.module.setMod(mod);
 	}
 	
 	/*  __    __   ____     ________

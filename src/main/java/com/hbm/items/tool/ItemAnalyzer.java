@@ -2,15 +2,14 @@ package com.hbm.items.tool;
 
 import java.util.List;
 
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidContainer;
 import com.hbm.interfaces.IFluidDuct;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
-import com.hbm.tileentity.conductor.TileEntityPylonRedWire;
 import com.hbm.tileentity.machine.TileEntityDummy;
 import com.hbm.tileentity.machine.TileEntityLockableBase;
+import com.hbm.tileentity.network.TileEntityPylon;
 
+import api.hbm.energy.IEnergyConnector;
 import net.minecraft.block.Block;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.EntityPlayer;
@@ -71,27 +70,10 @@ public class ItemAnalyzer extends Item {
 							"Slots: " + ((IInventory)te).getSizeInventory()));
 				}
 				
-				if(te instanceof IConsumer) {
+				if(te instanceof IEnergyConnector) {
 					
 					player.addChatMessage(new ChatComponentText(
-							"Electricity: " + ((IConsumer)te).getPower() + " HE"));
-				} else if(te instanceof ISource) {
-					
-					player.addChatMessage(new ChatComponentText(
-							"Electricity: " + ((ISource)te).getSPower() + " HE"));
-				}
-				
-				if(te instanceof IFluidContainer) {
-					
-					player.addChatMessage(new ChatComponentText(
-							"Fluid Tanks:"));
-					
-					List<FluidTank> tanks = ((IFluidContainer)te).getTanks();
-					
-					for(int i = 0; i < tanks.size(); i++) {
-						player.addChatMessage(new ChatComponentText(
-								" *Tank " + (i + 1) + ": " + tanks.get(i).getFill() + "mB " + I18n.format(tanks.get(i).getTankType().getUnlocalizedName())));
-					}
+							"Electricity: " + ((IEnergyConnector)te).getPower() + " HE"));
 				}
 				
 				if(te instanceof IFluidDuct) {
@@ -100,7 +82,7 @@ public class ItemAnalyzer extends Item {
 							"Duct Type: " + I18n.format(((IFluidDuct)te).getType().getUnlocalizedName())));
 				}
 				
-				if(te instanceof TileEntityPylonRedWire) {
+				if(te instanceof TileEntityPylon) {
 					
 					/**
 					 * this is a smoldering crater

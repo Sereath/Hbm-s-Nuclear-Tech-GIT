@@ -6,7 +6,10 @@ import java.util.Random;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.opengl.GL11;
 
+import com.hbm.blocks.ILookOverlay;
+import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.generic.BlockAshes;
+import com.hbm.config.GeneralConfig;
 import com.hbm.entity.mob.EntityHunterChopper;
 import com.hbm.entity.projectile.EntityChopperMine;
 import com.hbm.extprop.HbmLivingProps;
@@ -14,6 +17,7 @@ import com.hbm.extprop.HbmPlayerProps;
 import com.hbm.handler.ArmorModHandler;
 import com.hbm.handler.HTTPHandler;
 import com.hbm.handler.HazmatRegistry;
+import com.hbm.hazard.HazardSystem;
 import com.hbm.interfaces.IHoldableWeapon;
 import com.hbm.interfaces.IItemHUD;
 import com.hbm.interfaces.Spaghetti;
@@ -32,11 +36,13 @@ import com.hbm.packet.GunButtonPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.render.anim.HbmAnimations;
 import com.hbm.render.anim.HbmAnimations.Animation;
+import com.hbm.render.block.ct.CTStitchReceiver;
 import com.hbm.render.util.RenderAccessoryUtility;
 import com.hbm.render.util.RenderOverhead;
 import com.hbm.render.util.RenderScreenOverlay;
 import com.hbm.render.util.SoyuzPronter;
-import com.hbm.render.world.RenderNTMSkybox;
+import com.hbm.render.world.RenderNTMSkyboxChainloader;
+import com.hbm.render.world.RenderNTMSkyboxImpact;
 import com.hbm.sound.MovingSoundChopper;
 import com.hbm.sound.MovingSoundChopperMine;
 import com.hbm.sound.MovingSoundCrashing;
@@ -45,18 +51,28 @@ import com.hbm.sound.MovingSoundXVL1456;
 import com.hbm.tileentity.bomb.TileEntityNukeCustom;
 import com.hbm.tileentity.bomb.TileEntityNukeCustom.CustomNukeEntry;
 import com.hbm.tileentity.bomb.TileEntityNukeCustom.EnumEntryType;
-import com.hbm.tileentity.machine.rbmk.TileEntityRBMKBase;
+import com.hbm.tileentity.machine.TileEntityNukeFurnace;
 import com.hbm.util.I18nUtil;
+import com.hbm.util.LoggingUtil;
+import com.hbm.util.ArmorRegistry;
+import com.hbm.util.ArmorUtil;
+import com.hbm.util.ArmorRegistry.HazardClass;
 import com.mojang.authlib.minecraft.MinecraftProfileTexture.Type;
+
+import api.hbm.item.IButtonReceiver;
+import api.hbm.item.IClickReceiver;
+
 import com.hbm.sound.MovingSoundPlayerLoop.EnumHbmSound;
 
 import cpw.mods.fml.client.FMLClientHandler;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.InputEvent.KeyInputEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.ClientTickEvent;
 import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.client.gui.ScaledResolution;
@@ -66,12 +82,15 @@ import net.minecraft.client.renderer.RenderHelper;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.RenderPlayer;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemArmor;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
+import net.minecraft.util.MathHelper;
+import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
@@ -89,6 +108,7 @@ import net.minecraftforge.client.event.RenderWorldLastEvent;
 import net.minecraftforge.client.event.TextureStitchEvent;
 import net.minecraftforge.client.event.sound.PlaySoundEvent17;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.oredict.OreDictionary;
 
 public class ModEventHandlerClient {
 	
@@ -118,7 +138,13 @@ public class ModEventHandlerClient {
 
 		/// DODD DIAG HOOK FOR RBMK
 		if(event.type == ElementType.CROSSHAIRS) {
-			TileEntityRBMKBase.diagnosticPrintHook(event);
+			Minecraft mc = Minecraft.getMinecraft();
+			World world = mc.theWorld;
+			MovingObjectPosition mop = mc.objectMouseOver;
+			
+			if(mop != null && mop.typeOfHit == mop.typeOfHit.BLOCK && world.getBlock(mop.blockX, mop.blockY, mop.blockZ) instanceof ILookOverlay) {
+				((ILookOverlay) world.getBlock(mop.blockX, mop.blockY, mop.blockZ)).printHook(event, world, mop.blockX, mop.blockY, mop.blockZ);
+			}
 		}
 		
 		/// HANLDE ANIMATION BUSES ///
@@ -280,24 +306,6 @@ public class ModEventHandlerClient {
 		}
 	}
 	
-	//just finish this somewhen i guess
-	/*@SubscribeEvent
-	public void keybindEvent(RenderPlayerEvent.Pre event) {
-		
-		HbmPlayerProps props = HbmPlayerProps.getData(Minecraft.getMinecraft().thePlayer);
-		
-		for(EnumKeybind key : EnumKeybind.values()) {
-			
-			boolean last = props.getKeyPressed(key);
-			boolean current = MainRegistry.proxy.getIsKeyPressed(key);
-	
-			if(last != current) {
-				PacketDispatcher.wrapper.sendToServer(new KeybindPacket(key, current));
-				props.setKeyPressed(key, current);
-			}
-		}
-	}*/
-	
 	@SubscribeEvent
 	public void onRenderArmorEvent(RenderPlayerEvent.SetArmorModel event) {
 		
@@ -336,33 +344,78 @@ public class ModEventHandlerClient {
 		
 		EntityPlayer player = Minecraft.getMinecraft().thePlayer;
 		
-		if(player.getHeldItem() != null && player.getHeldItem().getItem() instanceof ItemGunBase) {
+		if(player.getHeldItem() != null) {
 			
-			if(event.button == 0)
-				event.setCanceled(true);
+			Item held = player.getHeldItem().getItem();
 			
-			ItemGunBase item = (ItemGunBase)player.getHeldItem().getItem();
-			
-			if(event.button == 0 && !item.m1 && !item.m2) {
-				item.m1 = true;
-				PacketDispatcher.wrapper.sendToServer(new GunButtonPacket(true, (byte) 0));
-				item.startActionClient(player.getHeldItem(), player.worldObj, player, true);
+			if(held instanceof IClickReceiver) {
+				IClickReceiver rec = (IClickReceiver) held;
+				
+				if(rec.handleMouseInput(player.getHeldItem(), player, event.button, event.buttonstate)) {
+					event.setCanceled(true);
+					return;
+				}
 			}
-			else if(event.button == 1 && !item.m2 && !item.m1) {
-				item.m2 = true;
-				PacketDispatcher.wrapper.sendToServer(new GunButtonPacket(true, (byte) 1));
-				item.startActionClient(player.getHeldItem(), player.worldObj, player, false);
+			
+			if(held instanceof ItemGunBase) {
+				
+				if(event.button == 0)
+					event.setCanceled(true);
+				
+				ItemGunBase item = (ItemGunBase)player.getHeldItem().getItem();
+				
+				if(event.button == 0 && !item.m1 && !item.m2) {
+					item.m1 = true;
+					PacketDispatcher.wrapper.sendToServer(new GunButtonPacket(true, (byte) 0));
+					item.startActionClient(player.getHeldItem(), player.worldObj, player, true);
+				}
+				else if(event.button == 1 && !item.m2 && !item.m1) {
+					item.m2 = true;
+					PacketDispatcher.wrapper.sendToServer(new GunButtonPacket(true, (byte) 1));
+					item.startActionClient(player.getHeldItem(), player.worldObj, player, false);
+				}
 			}
 		}
-
+	}
+	
+	@SubscribeEvent
+	public void keyEvent(KeyInputEvent event) {
+		
+		EntityPlayer player = Minecraft.getMinecraft().thePlayer;
+		
+		if(player.getHeldItem() != null) {
+			
+			Item held = player.getHeldItem().getItem();
+			
+			if(held instanceof IButtonReceiver) {
+				IButtonReceiver rec = (IButtonReceiver) held;
+				rec.handleKeyboardInput(player.getHeldItem(), player);
+			}
+		}
 	}
 
 	@Spaghetti("please get this shit out of my face")
 	@SubscribeEvent
 	public void onPlaySound(PlaySoundEvent17 e) {
+		
+		EntityPlayer player = MainRegistry.proxy.me();
+		Minecraft mc = Minecraft.getMinecraft();
+		
+		if(player != null && mc.theWorld != null) {
+			int i = MathHelper.floor_double(player.posX);
+			int j = MathHelper.floor_double(player.posY);
+			int k = MathHelper.floor_double(player.posZ);
+			Block block = mc.theWorld.getBlock(i, j, k);
+			
+			if(block == ModBlocks.vacuum) {
+				e.result = null;
+				return;
+			}
+		}
+		
 		ResourceLocation r = e.sound.getPositionedSoundLocation();
 
-		WorldClient wc = Minecraft.getMinecraft().theWorld;
+		WorldClient wc = mc.theWorld;
 		
 		//Alright, alright, I give the fuck up, you've wasted my time enough with this bullshit. You win.
 		//A winner is you.
@@ -417,7 +470,7 @@ public class ModEventHandlerClient {
 			if(!sounds.init || sounds.isDonePlaying()) {
 				sounds.init = true;
 				sounds.setDone(false);
-				Minecraft.getMinecraft().getSoundHandler().playSound(sounds);
+				mc.getSoundHandler().playSound(sounds);
 			}
 		}
 	}
@@ -428,29 +481,30 @@ public class ModEventHandlerClient {
 		ItemStack stack = event.itemStack;
 		List<String> list = event.toolTip;
 		
-		double rad = HazmatRegistry.getResistance(stack);
+		/// HAZMAT INFO ///
+		List<HazardClass> hazInfo = ArmorRegistry.hazardClasses.get(stack.getItem());
 		
-		rad = ((int)(rad * 1000)) / 1000D;
-		
-		if(rad > 0)
-			list.add(EnumChatFormatting.YELLOW + I18nUtil.resolveKey("trait.radResistance", rad));
-		
-		ComparableStack comp = new ComparableStack(stack).makeSingular();
-		
-		CustomNukeEntry entry = TileEntityNukeCustom.entries.get(comp);
-		
-		if(entry != null) {
+		if(hazInfo != null) {
 			
-			if(!list.isEmpty())
-				list.add("");
-			
-			if(entry.entry == EnumEntryType.ADD)
-				list.add(EnumChatFormatting.GOLD + "Adds " + entry.value + " to the custom nuke stage " + entry.type);
-
-			if(entry.entry == EnumEntryType.MULT)
-				list.add(EnumChatFormatting.GOLD + "Adds multiplier " + entry.value + " to the custom nuke stage " + entry.type);
+			if(Keyboard.isKeyDown(Keyboard.KEY_LSHIFT)) {
+				list.add(EnumChatFormatting.GOLD + I18nUtil.resolveKey("hazard.prot"));
+				for(HazardClass clazz : hazInfo) {
+					list.add(EnumChatFormatting.YELLOW + "  " + I18nUtil.resolveKey(clazz.lang));
+				}
+			} else {
+				
+				list.add(EnumChatFormatting.DARK_GRAY + "" + EnumChatFormatting.ITALIC +"Hold <" +
+						EnumChatFormatting.YELLOW + "" + EnumChatFormatting.ITALIC + "LSHIFT" +
+						EnumChatFormatting.DARK_GRAY + "" + EnumChatFormatting.ITALIC + "> to display protection info");
+			}
 		}
 		
+		/// CLADDING (LEGACY) ///
+		double rad = HazmatRegistry.getResistance(stack);
+		rad = ((int)(rad * 1000)) / 1000D;
+		if(rad > 0) list.add(EnumChatFormatting.YELLOW + I18nUtil.resolveKey("trait.radResistance", rad));
+		
+		/// ARMOR MODS ///
 		if(stack.getItem() instanceof ItemArmor && ArmorModHandler.hasMods(stack)) {
 			
 			if(!Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) && !(Minecraft.getMinecraft().currentScreen instanceof GUIArmorTable)) {
@@ -474,7 +528,46 @@ public class ModEventHandlerClient {
 				}
 			}
 		}
-    }
+		
+		/// HAZARDS ///
+		HazardSystem.addFullTooltip(stack, event.entityPlayer, list);
+		
+		if(event.showAdvancedItemTooltips) {
+			int ids[] = OreDictionary.getOreIDs(stack);
+			
+			if(ids.length > 0) {
+				list.add(EnumChatFormatting.BLUE + "Ore Dict:");
+				for(int i : ids) {
+					list.add(EnumChatFormatting.AQUA + " -" + OreDictionary.getOreName(i));
+				}
+			} else {
+				list.add(EnumChatFormatting.RED + "No Ore Dict data!");
+			}
+		}
+		
+		/// NUCLEAR FURNACE FUELS ///
+		int breeder = TileEntityNukeFurnace.getFuelValue(stack);
+		
+		if(breeder != 0) {
+			list.add(EnumChatFormatting.YELLOW + I18nUtil.resolveKey("trait.furnace", (breeder * 5)));
+		}
+		
+		/// CUSTOM NUKE ///
+		ComparableStack comp = new ComparableStack(stack).makeSingular();
+		CustomNukeEntry entry = TileEntityNukeCustom.entries.get(comp);
+		
+		if(entry != null) {
+			
+			if(!list.isEmpty())
+				list.add("");
+			
+			if(entry.entry == EnumEntryType.ADD)
+				list.add(EnumChatFormatting.GOLD + "Adds " + entry.value + " to the custom nuke stage " + entry.type);
+
+			if(entry.entry == EnumEntryType.MULT)
+				list.add(EnumChatFormatting.GOLD + "Adds multiplier " + entry.value + " to the custom nuke stage " + entry.type);
+		}
+	}
 	
 	private ResourceLocation ashes = new ResourceLocation(RefStrings.MODID + ":textures/misc/overlay_ash.png");
 	
@@ -508,14 +601,14 @@ public class ModEventHandlerClient {
 		Tessellator tessellator = Tessellator.instance;
 
 		//int d = mc.theWorld.getLightBrightnessForSkyBlocks(MathHelper.floor_double(mc.thePlayer.posX), MathHelper.floor_double(mc.thePlayer.posY), MathHelper.floor_double(mc.thePlayer.posZ), 0);
-		int cX = ModEventHandler.currentBrightness % 65536;
-		int cY = ModEventHandler.currentBrightness / 65536;
-		int lX = ModEventHandler.lastBrightness % 65536;
-		int lY = ModEventHandler.lastBrightness / 65536;
+		int cX = currentBrightness % 65536;
+		int cY = currentBrightness / 65536;
+		int lX = lastBrightness % 65536;
+		int lY = lastBrightness / 65536;
 		float interp = (mc.theWorld.getTotalWorldTime() % 20) * 0.05F;
 		
 		if(mc.theWorld.getTotalWorldTime() == 1)
-			ModEventHandler.lastBrightness = ModEventHandler.currentBrightness;
+			lastBrightness = currentBrightness;
 		
 		OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit, (float)(lX + (cX - lX) * interp) / 1.0F, (float)(lY + (cY - lY) * interp) / 1.0F);
 
@@ -545,6 +638,45 @@ public class ModEventHandlerClient {
 
 		GL11.glPopMatrix();
 	}
+
+	public static int currentBrightness = 0;
+	public static int lastBrightness = 0;
+	
+	@SubscribeEvent
+	public void clentTick(ClientTickEvent event) {
+		
+		Minecraft mc = Minecraft.getMinecraft();
+		
+		if(mc.gameSettings.renderDistanceChunks > 16 && GeneralConfig.enableRenderDistCheck && ! FMLClientHandler.instance().hasOptifine()) {
+			mc.gameSettings.renderDistanceChunks = 16;
+			LoggingUtil.errorWithHighlight("========================== WARNING ==========================");
+			LoggingUtil.errorWithHighlight("Dangerous render distance detected: Values over 16 only work on 1.8+ or with Optifine installed!!");
+			LoggingUtil.errorWithHighlight("Set '1.25_enableRenderDistCheck' in hbm.cfg to 'false' to disable this check.");
+			LoggingUtil.errorWithHighlight("========================== WARNING ==========================");
+			LoggingUtil.errorWithHighlight("If you got this error after removing Optifine: Consider deleting your option files after removing mods.");
+			LoggingUtil.errorWithHighlight("If you got this error after downgrading your Minecraft version: Consider using a launcher that doesn't reuse the same folders for every game instance. MultiMC for example, it's really good and it comes with a dedicated cat button. You like cats, right? Are you using the Microsoft launcher? The one launcher that turns every version switch into a tightrope act because all the old config and options files are still here because different instances all use the same folder structure instead of different folders like a competent launcher would, because some MO-RON thought that this was an acceptable way of doing things? Really? The launcher that circumcises every crashlog into indecipherable garbage, tricking oblivious people into posting that as a \"crash report\", effectively wasting everyone's time? The launcher made by the company that thought it would be HI-LA-RI-OUS to force everyone to use Microsoft accounts, effectively breaking every other launcher until they implement their terrible auth system?");
+			LoggingUtil.errorWithHighlight("========================== WARNING ==========================");
+		}
+		
+		if(mc.theWorld == null || mc.thePlayer == null)
+			return;
+		
+		if(event.phase == Phase.START && event.side == Side.CLIENT) {
+			
+			if(BlockAshes.ashes > 256) BlockAshes.ashes = 256;
+			if(BlockAshes.ashes > 0) BlockAshes.ashes -= 2;
+			if(BlockAshes.ashes < 0) BlockAshes.ashes = 0;
+			
+			if(mc.theWorld.getTotalWorldTime() % 20 == 0) {
+				this.lastBrightness = this.currentBrightness;
+				currentBrightness = mc.theWorld.getLightBrightnessForSkyBlocks(MathHelper.floor_double(mc.thePlayer.posX), MathHelper.floor_double(mc.thePlayer.posY), MathHelper.floor_double(mc.thePlayer.posZ), 0);
+			}
+			
+			if(ArmorUtil.isWearingEmptyMask(mc.thePlayer)) {
+				MainRegistry.proxy.displayTooltip(EnumChatFormatting.RED + "Your mask has no filter!");
+			}
+		}
+	}
 	
 	@SideOnly(Side.CLIENT)
 	@SubscribeEvent(priority = EventPriority.LOWEST)
@@ -554,15 +686,22 @@ public class ModEventHandlerClient {
 			
 			World world = Minecraft.getMinecraft().theWorld;
 			
-			if(world != null && world.provider instanceof WorldProviderSurface && !RenderNTMSkybox.didLastRender) {
+			if(world != null && world.provider instanceof WorldProviderSurface) {
 				
 				IRenderHandler sky = world.provider.getSkyRenderer();
-				if(!(sky instanceof RenderNTMSkybox)) {
-					world.provider.setSkyRenderer(new RenderNTMSkybox(sky));
+				
+				if(ModEventHandler.dust > 0 || ModEventHandler.fire > 0) {
+
+					if(!(sky instanceof RenderNTMSkyboxImpact)) {
+						world.provider.setSkyRenderer(new RenderNTMSkyboxImpact());
+					}
+				} else {
+
+					if(!(sky instanceof RenderNTMSkyboxChainloader)) {
+						world.provider.setSkyRenderer(new RenderNTMSkyboxChainloader(sky));
+					}
 				}
 			}
-			
-			RenderNTMSkybox.didLastRender = false;
 		}
 	}
 	
@@ -645,6 +784,8 @@ public class ModEventHandlerClient {
 		}
 
 		GL11.glPopMatrix();
+		
+		RenderOverhead.renderMarkers(event.partialTicks);
 
 		if(ArmorFSB.hasFSBArmor(player)) {
 			ItemStack plate = player.inventory.armorInventory[2];
@@ -655,10 +796,9 @@ public class ModEventHandlerClient {
 		}
 	}
 	
-	private static final ResourceLocation digammaStar = new ResourceLocation("hbm:textures/misc/star_digamma.png");
+	/*private static final ResourceLocation digammaStar = new ResourceLocation("hbm:textures/misc/star_digamma.png");
 	
 	@SideOnly(Side.CLIENT)
-	//@SubscribeEvent
 	public void onRenderDigammaStar(RenderWorldLastEvent event) {
 		
 		World world = Minecraft.getMinecraft().theWorld;
@@ -700,7 +840,7 @@ public class ModEventHandlerClient {
 		GL11.glEnable(GL11.GL_ALPHA_TEST);
 		
 		GL11.glPopMatrix();
-	}
+	}*/
 	
 	@SubscribeEvent(priority = EventPriority.HIGHEST)
 	public void preRenderEventFirst(RenderLivingEvent.Pre event) {
@@ -755,14 +895,22 @@ public class ModEventHandlerClient {
 		event.green = 0.0F;
 		event.blue = 0.0F;
 	}*/
-	
+
 	public static IIcon particleBase;
+	public static IIcon particleLeaf;
 
 	@SubscribeEvent
 	public void onTextureStitch(TextureStitchEvent.Pre event) {
 		
-		if(event.map.getTextureType() == 0)
+		if(event.map.getTextureType() == 0) {
 			particleBase = event.map.registerIcon(RefStrings.MODID + ":particle/particle_base");
+			particleLeaf = event.map.registerIcon(RefStrings.MODID + ":particle/dead_leaf");
+		}
+	}
+
+	@SubscribeEvent
+	public void postTextureStitch(TextureStitchEvent.Post event) {
+		CTStitchReceiver.receivers.forEach(x -> x.postStitch());
 	}
 
 	private static final ResourceLocation poster = new ResourceLocation(RefStrings.MODID + ":textures/models/misc/poster.png");

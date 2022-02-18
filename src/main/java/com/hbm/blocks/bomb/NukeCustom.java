@@ -3,7 +3,6 @@ package com.hbm.blocks.bomb;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
-import com.hbm.config.BombConfig;
 import com.hbm.entity.effect.EntityCloudFleija;
 import com.hbm.entity.effect.EntityNukeCloudSmall;
 import com.hbm.entity.grenade.EntityGrenadeZOMG;
@@ -14,7 +13,6 @@ import com.hbm.entity.projectile.EntityFallingNuke;
 import com.hbm.explosion.ExplosionChaos;
 import com.hbm.explosion.ExplosionLarge;
 import com.hbm.interfaces.IBomb;
-import com.hbm.interfaces.Untested;
 import com.hbm.main.MainRegistry;
 import com.hbm.tileentity.bomb.TileEntityNukeCustom;
 
@@ -125,7 +123,7 @@ public class NukeCustom extends BlockContainer implements IBomb {
 	@Override
 	public void onNeighborBlockChange(World world, int x, int y, int z, Block p_149695_5_) {
 		
-		if (world.isBlockIndirectlyGettingPowered(x, y, z) && !world.isRemote) {
+		if(world.isBlockIndirectlyGettingPowered(x, y, z)) {
 			this.explode(world, x, y, z);
 		}
 	}
@@ -151,19 +149,13 @@ public class NukeCustom extends BlockContainer implements IBomb {
 			
 			schrab += amat / 2 + hydro / 4 + nuke / 8 + tnt / 16;
 			schrab = Math.min(schrab, maxSchrab);
+			
+			worldObj.spawnEntityInWorld(EntityNukeExplosionMK3.statFacFleija(worldObj, xCoord + 0.5, yCoord + 0.5, zCoord + 0.5, (int) schrab));
 
-			EntityNukeExplosionMK3 entity = new EntityNukeExplosionMK3(worldObj);
-			entity.setPosition(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5);
-    		entity.destructionRange = (int) schrab;
-    		entity.speed = BombConfig.blastSpeed;
-    		entity.coefficient = 1.0F;
-    		entity.waste = false;
-    		worldObj.spawnEntityInWorld(entity);
-    	
-    		EntityCloudFleija cloud = new EntityCloudFleija(worldObj, (int)schrab);
-    		cloud.setPosition(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5);
-    		worldObj.spawnEntityInWorld(cloud);
-    		
+			EntityCloudFleija cloud = new EntityCloudFleija(worldObj, (int) schrab);
+			cloud.setPosition(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5);
+			worldObj.spawnEntityInWorld(cloud);
+
     	/// ANTIMATTER ///
 		} else if(amat > 0) {
 
@@ -242,25 +234,30 @@ public class NukeCustom extends BlockContainer implements IBomb {
 	}
 
 	@Override
-	public void explode(World world, int x, int y, int z) {
+	public BombReturnCode explode(World world, int x, int y, int z) {
 		
-		TileEntityNukeCustom entity = (TileEntityNukeCustom) world.getTileEntity(x, y, z);
-		
-		if(!entity.isFalling()) {
+		if(!world.isRemote) {
+			TileEntityNukeCustom entity = (TileEntityNukeCustom) world.getTileEntity(x, y, z);
 			
-			entity.clearSlots();
-			world.func_147480_a(x, y, z, false);
-			NukeCustom.explodeCustom(world, x + 0.5, y + 0.5, z + 0.5, entity.tnt, entity.nuke, entity.hydro, entity.amat, entity.dirty, entity.schrab, entity.euph);
-			
-		} else {
-			
-			EntityFallingNuke bomb = new EntityFallingNuke(world, entity.tnt, entity.nuke, entity.hydro, entity.amat, entity.dirty, entity.schrab, entity.euph);
-			bomb.getDataWatcher().updateObject(20, (byte)world.getBlockMetadata(x, y, z));
-			bomb.setPositionAndRotation(x + 0.5, y, z + 0.5, 0, 0);
-			entity.clearSlots();
-			world.setBlockToAir(x, y, z);
-			world.spawnEntityInWorld(bomb);
+			if(!entity.isFalling()) {
+				
+				entity.clearSlots();
+				world.func_147480_a(x, y, z, false);
+				NukeCustom.explodeCustom(world, x + 0.5, y + 0.5, z + 0.5, entity.tnt, entity.nuke, entity.hydro, entity.amat, entity.dirty, entity.schrab, entity.euph);
+				return BombReturnCode.DETONATED;
+				
+			} else {
+				
+				EntityFallingNuke bomb = new EntityFallingNuke(world, entity.tnt, entity.nuke, entity.hydro, entity.amat, entity.dirty, entity.schrab, entity.euph);
+				bomb.getDataWatcher().updateObject(20, (byte)world.getBlockMetadata(x, y, z));
+				bomb.setPositionAndRotation(x + 0.5, y, z + 0.5, 0, 0);
+				entity.clearSlots();
+				world.setBlockToAir(x, y, z);
+				world.spawnEntityInWorld(bomb);
+				return BombReturnCode.TRIGGERED;
+			}
 		}
 		
+		return BombReturnCode.UNDEFINED;
 	}
 }

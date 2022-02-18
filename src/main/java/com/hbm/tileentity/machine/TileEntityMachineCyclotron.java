@@ -10,12 +10,12 @@ import com.hbm.entity.logic.EntityBalefire;
 import com.hbm.entity.logic.EntityNukeExplosionMK4;
 import com.hbm.explosion.ExplosionLarge;
 import com.hbm.explosion.ExplosionThermo;
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidSource;
-import com.hbm.inventory.CyclotronRecipes;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
+import com.hbm.inventory.recipes.CyclotronRecipes;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemMachineUpgrade;
 import com.hbm.lib.Library;
@@ -23,6 +23,7 @@ import com.hbm.packet.AuxParticlePacketNT;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.tileentity.TileEntityMachineBase;
 
+import api.hbm.energy.IEnergyUser;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -31,7 +32,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.AxisAlignedBB;
 
-public class TileEntityMachineCyclotron extends TileEntityMachineBase implements IFluidSource, IFluidAcceptor, IConsumer {
+public class TileEntityMachineCyclotron extends TileEntityMachineBase implements IFluidSource, IFluidAcceptor, IEnergyUser {
 	
 	public long power;
 	public static final long maxPower = 100000000;
@@ -55,8 +56,8 @@ public class TileEntityMachineCyclotron extends TileEntityMachineBase implements
 	public TileEntityMachineCyclotron() {
 		super(16);
 
-		coolant = new FluidTank(FluidType.COOLANT, 32000, 0);
-		amat = new FluidTank(FluidType.AMAT, 8000, 1);
+		coolant = new FluidTank(Fluids.COOLANT, 32000, 0);
+		amat = new FluidTank(Fluids.AMAT, 8000, 1);
 	}
 
 	@Override
@@ -68,6 +69,8 @@ public class TileEntityMachineCyclotron extends TileEntityMachineBase implements
 	public void updateEntity() {
 		
 		if(!worldObj.isRemote) {
+			
+			this.updateConnections();
 
 			age++;
 			if(age >= 20)
@@ -150,6 +153,18 @@ public class TileEntityMachineCyclotron extends TileEntityMachineBase implements
 			coolant.updateTank(xCoord, yCoord, zCoord, worldObj.provider.dimensionId);
 			amat.updateTank(xCoord, yCoord, zCoord, worldObj.provider.dimensionId);
 		}
+	}
+	
+	private void updateConnections()  {
+
+		this.trySubscribe(worldObj, xCoord + 3, yCoord, zCoord + 1, Library.POS_X);
+		this.trySubscribe(worldObj, xCoord + 3, yCoord, zCoord - 1, Library.POS_X);
+		this.trySubscribe(worldObj, xCoord - 3, yCoord, zCoord + 1, Library.NEG_X);
+		this.trySubscribe(worldObj, xCoord - 3, yCoord, zCoord - 1, Library.NEG_X);
+		this.trySubscribe(worldObj, xCoord + 1, yCoord, zCoord + 3, Library.POS_Z);
+		this.trySubscribe(worldObj, xCoord - 1, yCoord, zCoord + 3, Library.POS_Z);
+		this.trySubscribe(worldObj, xCoord + 1, yCoord, zCoord - 3, Library.NEG_Z);
+		this.trySubscribe(worldObj, xCoord - 1, yCoord, zCoord - 3, Library.NEG_Z);
 	}
 	
 	public void networkUnpack(NBTTagCompound data) {
@@ -336,7 +351,7 @@ public class TileEntityMachineCyclotron extends TileEntityMachineBase implements
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		
 		if(index == 0)
 			coolant.setFill(fill);
@@ -345,15 +360,15 @@ public class TileEntityMachineCyclotron extends TileEntityMachineBase implements
 	}
 
 	@Override
-	public void setFluidFill(int fill, FluidType type) {
-		if(type == FluidType.COOLANT)
+	public void setFillForTransfer(int fill, FluidType type) {
+		if(type == Fluids.COOLANT)
 			coolant.setFill(fill);
-		else if(type == FluidType.AMAT)
+		else if(type == Fluids.AMAT)
 			amat.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index == 0)
 			coolant.setTankType(type);
 		else if(index == 1)
@@ -361,15 +376,10 @@ public class TileEntityMachineCyclotron extends TileEntityMachineBase implements
 	}
 
 	@Override
-	public List<FluidTank> getTanks() {
-		return Arrays.asList(new FluidTank[] {coolant, amat});
-	}
-
-	@Override
 	public int getFluidFill(FluidType type) {
-		if(type == FluidType.COOLANT)
+		if(type == Fluids.COOLANT)
 			return coolant.getFill();
-		else if(type == FluidType.AMAT)
+		else if(type == Fluids.AMAT)
 			return amat.getFill();
 		
 		return 0;
@@ -410,9 +420,9 @@ public class TileEntityMachineCyclotron extends TileEntityMachineBase implements
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		
-		if(type == FluidType.COOLANT)
+		if(type == Fluids.COOLANT)
 			return coolant.getMaxFill();
 		
 		return 0;

@@ -3,14 +3,15 @@ package com.hbm.tileentity.machine;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.lib.ModDamageSource;
 import com.hbm.tileentity.TileEntityMachineBase;
 
 import api.hbm.block.ILaserable;
+import api.hbm.energy.IEnergyUser;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.block.Block;
@@ -23,7 +24,7 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityCoreEmitter extends TileEntityMachineBase implements IConsumer, IFluidAcceptor, ILaserable {
+public class TileEntityCoreEmitter extends TileEntityMachineBase implements IEnergyUser, IFluidAcceptor, ILaserable {
 	
 	public long power;
 	public static final long maxPower = 1000000000L;
@@ -38,7 +39,7 @@ public class TileEntityCoreEmitter extends TileEntityMachineBase implements ICon
 
 	public TileEntityCoreEmitter() {
 		super(0);
-		tank = new FluidTank(FluidType.CRYOGEL, 64000, 0);
+		tank = new FluidTank(Fluids.CRYOGEL, 64000, 0);
 	}
 
 	@Override
@@ -50,6 +51,8 @@ public class TileEntityCoreEmitter extends TileEntityMachineBase implements ICon
 	public void updateEntity() {
 
 		if (!worldObj.isRemote) {
+			
+			this.updateStandardConnections(worldObj, xCoord, yCoord, zCoord);
 			
 			watts = MathHelper.clamp_int(watts, 1, 100);
 			long demand = maxPower * watts / 2000;
@@ -184,7 +187,7 @@ public class TileEntityCoreEmitter extends TileEntityMachineBase implements ICon
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tank.getTankType().name()))
 			tank.setFill(i);
 	}
@@ -198,7 +201,7 @@ public class TileEntityCoreEmitter extends TileEntityMachineBase implements ICon
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tank.getTankType().name()))
 			return tank.getMaxFill();
 		else
@@ -206,21 +209,13 @@ public class TileEntityCoreEmitter extends TileEntityMachineBase implements ICon
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		tank.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		tank.setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tank);
-		
-		return list;
 	}
 
 	@Override
@@ -236,6 +231,11 @@ public class TileEntityCoreEmitter extends TileEntityMachineBase implements ICon
 	@Override
 	public long getMaxPower() {
 		return this.maxPower;
+	}
+
+	@Override
+	public boolean canConnect(ForgeDirection dir) {
+		return dir != ForgeDirection.UNKNOWN;
 	}
 
 	@Override
@@ -281,5 +281,4 @@ public class TileEntityCoreEmitter extends TileEntityMachineBase implements ICon
 		nbt.setBoolean("isOn", isOn);
 		tank.writeToNBT(nbt, "tank");
 	}
-
 }

@@ -54,17 +54,32 @@ public class ItemPill extends ItemFood {
 			
 			if(this == ModItems.siox) {
 				HbmLivingProps.setAsbestos(player, 0);
+				HbmLivingProps.setBlackLung(player, Math.min(HbmLivingProps.getBlackLung(player), HbmLivingProps.maxBlacklung / 5));
 			}
 
 			if(this == ModItems.xanax) {
 				float digamma = HbmLivingProps.getDigamma(player);
 				HbmLivingProps.setDigamma(player, Math.max(digamma - 0.5F, 0F));
 			}
+			
+			if(this == ModItems.chocolate) {
+				if(rand.nextInt(25) == 0) {
+					player.attackEntityFrom(ModDamageSource.overdose, 1000);
+				}
+				player.addPotionEffect(new PotionEffect(Potion.digSpeed.id, 60 * 20, 3));
+				player.addPotionEffect(new PotionEffect(Potion.moveSpeed.id, 60 * 20, 3));
+				player.addPotionEffect(new PotionEffect(Potion.jump.id, 60 * 20, 3));
+			}
 
 			if(this == ModItems.fmn) {
 				float digamma = HbmLivingProps.getDigamma(player);
 				HbmLivingProps.setDigamma(player, Math.min(digamma, 2F));
 				player.addPotionEffect(new PotionEffect(Potion.blindness.id, 60, 0));
+			}
+			
+			if(this == ModItems.pirfenidone) {
+				float fibrosis = HbmLivingProps.getFibrosis(player);
+				HbmLivingProps.setFibrosis(player, (int) Math.min(fibrosis, 37800));
 			}
 
 			if(this == ModItems.five_htp) {
@@ -93,6 +108,12 @@ public class ItemPill extends ItemFood {
 		}
 		if(this == ModItems.fmn) {
 			list.add("Removes all DRX above 2,000mDRX");
+		}
+		if(this == ModItems.chocolate) {
+			list.add("Radium Chocolate? Pretty sure this is just meth.");
+		}
+		if(this == ModItems.pirfenidone) {
+			list.add("Removes all Pulmonary Fibrosis over 35%");
 		}
 		if(this == ModItems.five_htp) {
 			list.add("Removes all DRX, Stability for 10 minutes");

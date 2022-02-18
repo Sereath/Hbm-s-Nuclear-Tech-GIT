@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.hbm.entity.mob.EntityDuck;
 import com.hbm.lib.ModDamageSource;
 import com.hbm.main.MainRegistry;
 import com.hbm.packet.AuxParticlePacketNT;
@@ -32,6 +33,11 @@ public class HbmLivingProps implements IExtendedEntityProperties {
 	private float radiation;
 	private float digamma;
 	private int asbestos;
+	public static final int maxAsbestos = 60 * 60 * 20;
+	private int blacklung;
+	public static final int maxBlacklung = 60 * 60 * 20;
+	private int fibrosis;
+	public static final int maxFibrosis = 60 * 60 * 30;
 	private float radEnv;
 	private float radBuf;
 	private int bombTimer;
@@ -110,6 +116,12 @@ public class HbmLivingProps implements IExtendedEntityProperties {
 	
 	public static void setDigamma(EntityLivingBase entity, float digamma) {
 		
+		if(entity.worldObj.isRemote)
+			return;
+		
+		if(entity instanceof EntityDuck)
+			digamma = 0.0F;
+		
 		getData(entity).digamma = digamma;
 		
 		float healthMod = (float)Math.pow(0.5, digamma) - 1F;
@@ -174,7 +186,7 @@ public class HbmLivingProps implements IExtendedEntityProperties {
 	public static void setAsbestos(EntityLivingBase entity, int asbestos) {
 		getData(entity).asbestos = asbestos;
 		
-		if(asbestos >= 60 * 60 * 20) {
+		if(asbestos >= maxAsbestos) {
 			getData(entity).asbestos = 0;
 			entity.attackEntityFrom(ModDamageSource.asbestos, 1000);
 		}
@@ -182,6 +194,45 @@ public class HbmLivingProps implements IExtendedEntityProperties {
 	
 	public static void incrementAsbestos(EntityLivingBase entity, int asbestos) {
 		setAsbestos(entity, getAsbestos(entity) + asbestos);
+		incrementFibrosis(entity, asbestos);
+	}
+	
+	
+	/// BLACK LUNG DISEASE ///
+	public static int getBlackLung(EntityLivingBase entity) {
+		return getData(entity).blacklung;
+	}
+	
+	public static void setBlackLung(EntityLivingBase entity, int blacklung) {
+		getData(entity).blacklung = blacklung;
+		
+		if(blacklung >= maxBlacklung) {
+			getData(entity).blacklung = 0;
+			entity.attackEntityFrom(ModDamageSource.blacklung, 1000);
+		}
+	}
+	
+	public static void incrementBlackLung(EntityLivingBase entity, int blacklung) {
+		setBlackLung(entity, getBlackLung(entity) + blacklung);
+		incrementFibrosis(entity, blacklung);
+	}
+	
+	/// PULMONARY FIBROSIS ///
+	public static int getFibrosis(EntityLivingBase entity) {
+		return getData(entity).fibrosis;
+	}
+	
+	public static void setFibrosis(EntityLivingBase entity, int fibrosis) {
+		getData(entity).fibrosis = fibrosis;
+		
+		if (fibrosis >= maxFibrosis) {
+			getData(entity).fibrosis = 0;
+			entity.attackEntityFrom(ModDamageSource.asbestos, 1000);
+		}
+	}
+	
+	public static void incrementFibrosis(EntityLivingBase entity, int fibrosis) {
+		setFibrosis(entity, getFibrosis(entity) + fibrosis);
 	}
 	
 	/// TIME BOMB ///
@@ -215,6 +266,8 @@ public class HbmLivingProps implements IExtendedEntityProperties {
 		props.setInteger("hfr_asbestos", asbestos);
 		props.setInteger("hfr_bomb", bombTimer);
 		props.setInteger("hfr_contagion", contagion);
+		props.setInteger("hfr_blacklung", blacklung);
+		props.setInteger("hfr_fibrosis", fibrosis);
 		
 		props.setInteger("hfr_cont_count", this.contamination.size());
 		
@@ -236,6 +289,8 @@ public class HbmLivingProps implements IExtendedEntityProperties {
 			asbestos = props.getInteger("hfr_asbestos");
 			bombTimer = props.getInteger("hfr_bomb");
 			contagion = props.getInteger("hfr_contagion");
+			blacklung = props.getInteger("hfr_blacklung");
+			fibrosis = props.getInteger("hfr_fibrosis");
 			
 			int cont = props.getInteger("hfr_cont_count");
 			

@@ -1,5 +1,10 @@
 package com.hbm.blocks.machine;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import com.hbm.blocks.ITooltipProvider;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.lib.RefStrings;
 import com.hbm.main.MainRegistry;
@@ -16,14 +21,17 @@ import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.AxisAlignedBB;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
-public class NTMAnvil extends BlockFalling {
+public class NTMAnvil extends BlockFalling implements ITooltipProvider {
 	
 	public final int tier;
+	
+	public static final HashMap<Integer, List<NTMAnvil>> tierMap = new HashMap();
 
 	@SideOnly(Side.CLIENT)
 	private IIcon iconTop;
@@ -34,6 +42,27 @@ public class NTMAnvil extends BlockFalling {
 		this.setHardness(5.0F);
 		this.setResistance(100.0F);
 		this.tier = tier;
+		
+		List<NTMAnvil> anvils = tierMap.get((Integer)tier);
+		if(anvils == null)
+			anvils = new ArrayList();
+		anvils.add(this);
+		tierMap.put((Integer)tier, anvils);
+	}
+	
+	public static List<ItemStack> getAnvilsFromTier(int tier) {
+		List<NTMAnvil> anvils = tierMap.get((Integer)tier);
+		
+		if(anvils != null) {
+			List<ItemStack> stacks = new ArrayList();
+			
+			for(NTMAnvil anvil : anvils)
+				stacks.add(new ItemStack(anvil));
+			
+			return stacks;
+		}
+		
+		return new ArrayList();
 	}
 	
 	@Override
@@ -129,5 +158,10 @@ public class NTMAnvil extends BlockFalling {
 			this.setBlockBounds(0.25F, 0.0F, 0.0F, 0.75F, 0.75F, 1.0F);
 		
 		return AxisAlignedBB.getBoundingBox(x + this.minX, y + this.minY, z + this.minZ, x + this.maxX, y + this.maxY, z + this.maxZ);
+	}
+
+	@Override
+	public void addInformation(ItemStack stack, EntityPlayer player, List list, boolean bool) {
+		list.add(EnumChatFormatting.GOLD + "Tier " + tier + " Anvil");
 	}
 }

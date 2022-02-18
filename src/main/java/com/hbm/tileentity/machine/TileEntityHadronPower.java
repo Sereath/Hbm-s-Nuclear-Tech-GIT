@@ -1,18 +1,30 @@
 package com.hbm.tileentity.machine;
 
 import com.hbm.blocks.machine.BlockHadronPower;
-import com.hbm.interfaces.IConsumer;
 
+import api.hbm.energy.IEnergyUser;
 import net.minecraft.block.Block;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityHadronPower extends TileEntity implements IConsumer {
+public class TileEntityHadronPower extends TileEntity implements IEnergyUser {
 
 	public long power;
 
+	@Override
 	public boolean canUpdate() {
-		return false;
+		return true; //yeah idk wtf happened with the old behavior and honestly i'm not keen on figuring that one out
+	}
+	
+	@Override
+	public void updateEntity() {
+		
+		if(!worldObj.isRemote) {
+			for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+				this.trySubscribe(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, dir);
+			}
+		}
 	}
 
 	@Override

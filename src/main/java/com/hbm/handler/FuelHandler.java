@@ -11,11 +11,19 @@ public class FuelHandler implements IFuelHandler {
 
 	@Override
 	public int getBurnTime(ItemStack fuel) {
+		
+		int single = 200;
 
 		if(fuel.getItem().equals(ModItems.solid_fuel))
-			return 3200;
-		if(fuel.getItem().equals(ModItems.biomass_compressed))
+			return single * 16;
+		if(fuel.getItem().equals(ModItems.solid_fuel_presto))
+			return single * 40;
+		if(fuel.getItem().equals(ModItems.solid_fuel_presto_triplet))
+			return single * 200;
+		if(fuel.getItem().equals(ModItems.biomass))
 			return 800;
+		if(fuel.getItem().equals(ModItems.biomass_compressed))
+			return 2400;
 		if(fuel.getItem().equals(ModItems.powder_coal))
 			return 1600;
 		if(fuel.getItem().equals(ModItems.scrap))

@@ -3,15 +3,14 @@ package com.hbm.tileentity.machine;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
-import com.hbm.lib.Library;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.tileentity.TileEntityMachineBase;
 
 import api.hbm.block.ILaserable;
+import api.hbm.energy.IEnergyGenerator;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.init.Blocks;
@@ -21,17 +20,15 @@ import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityCoreReceiver extends TileEntityMachineBase implements ISource, IFluidAcceptor, ILaserable {
+public class TileEntityCoreReceiver extends TileEntityMachineBase implements IEnergyGenerator, IFluidAcceptor, ILaserable {
 	
 	public long power;
 	public long joules;
 	public FluidTank tank;
-	public List<IConsumer> list = new ArrayList();
-	public int age = 0;
 
 	public TileEntityCoreReceiver() {
 		super(0);
-		tank = new FluidTank(FluidType.CRYOGEL, 64000, 0);
+		tank = new FluidTank(Fluids.CRYOGEL, 64000, 0);
 	}
 
 	@Override
@@ -46,7 +43,10 @@ public class TileEntityCoreReceiver extends TileEntityMachineBase implements ISo
 			
 			tank.updateTank(xCoord, yCoord, zCoord, worldObj.provider.dimensionId);
 			
-			power += joules * 5000;
+			power = joules * 5000;
+			
+			for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS)
+				this.sendPower(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, dir);
 			
 			if(joules > 0) {
 
@@ -63,75 +63,35 @@ public class TileEntityCoreReceiver extends TileEntityMachineBase implements ISo
 			this.networkPack(data, 50);
 			
 			joules = 0;
-
-			age++;
-			if(age >= 20)
-			{
-				age = 0;
-			}
-			
-			if(age == 9 || age == 19) {
-				ffgeuaInit();
-				
-				if(!getTact())
-					power = 0;
-			}
 		}
 	}
 	
 	public void networkUnpack(NBTTagCompound data) {
-
 		joules = data.getLong("joules");
 	}
 
 	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord, this.yCoord + 1, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord - 1, this.zCoord, getTact());
-		ffgeua(this.xCoord - 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord + 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord - 1, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord + 1, getTact());
-	}
-	
-	@Override
-	public boolean getTact() {
-		if(age >= 0 && age < 10)
-		{
-			return true;
-		}
-		
-		return false;
-	}
-
-	@Override
-	public long getSPower() {
+	public long getPower() {
 		return power;
 	}
 
 	@Override
-	public void setSPower(long i) {
+	public void setPower(long i) {
 		this.power = i;
 	}
 
 	@Override
-	public List<IConsumer> getList() {
-		return list;
+	public boolean canConnect(ForgeDirection dir) {
+		return dir != ForgeDirection.UNKNOWN;
 	}
 
 	@Override
-	public void clearList() {
-		this.list.clear();
+	public long getMaxPower() {
+		return 0;
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tank.getTankType().name()))
 			tank.setFill(i);
 	}
@@ -145,7 +105,7 @@ public class TileEntityCoreReceiver extends TileEntityMachineBase implements ISo
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tank.getTankType().name()))
 			return tank.getMaxFill();
 		else
@@ -153,21 +113,13 @@ public class TileEntityCoreReceiver extends TileEntityMachineBase implements ISo
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		tank.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		tank.setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tank);
-		
-		return list;
 	}
 
 	@Override

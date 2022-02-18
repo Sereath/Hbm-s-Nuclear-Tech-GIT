@@ -9,13 +9,11 @@ import com.hbm.entity.effect.EntityCloudFleijaRainbow;
 import com.hbm.entity.effect.EntityEMPBlast;
 import com.hbm.entity.logic.EntityNukeExplosionMK3;
 import com.hbm.entity.logic.EntityNukeExplosionMK4;
-import com.hbm.entity.particle.EntityTSmokeFX;
 import com.hbm.explosion.ExplosionChaos;
 import com.hbm.explosion.ExplosionLarge;
 import com.hbm.explosion.ExplosionNukeGeneric;
 import com.hbm.handler.BulletConfigSyncingUtil;
 import com.hbm.handler.BulletConfiguration;
-import com.hbm.lib.ModDamageSource;
 import com.hbm.main.MainRegistry;
 import com.hbm.packet.AuxParticlePacketNT;
 import com.hbm.packet.PacketDispatcher;
@@ -37,6 +35,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
@@ -83,9 +82,11 @@ public class EntityBulletBase extends Entity implements IProjectile {
 
 		this.setLocationAndAngles(entity.posX, entity.posY + entity.getEyeHeight(), entity.posZ, entity.rotationYaw, entity.rotationPitch);
 		
-		this.posX -= MathHelper.cos(this.rotationYaw / 180.0F * (float) Math.PI) * 0.16F;
-		this.posY -= 0.10000000149011612D;
-		this.posZ -= MathHelper.sin(this.rotationYaw / 180.0F * (float) Math.PI) * 0.16F;
+		double sideOffset = 0.16D;
+		
+		this.posX -= MathHelper.cos(this.rotationYaw / 180.0F * (float) Math.PI) * sideOffset;
+		this.posY -= 0.1D;
+		this.posZ -= MathHelper.sin(this.rotationYaw / 180.0F * (float) Math.PI) * sideOffset;
 		this.setPosition(this.posX, this.posY, this.posZ);
 		
 		this.motionX = -MathHelper.sin(this.rotationYaw / 180.0F * (float) Math.PI) * MathHelper.cos(this.rotationPitch / 180.0F * (float) Math.PI);
@@ -129,6 +130,23 @@ public class EntityBulletBase extends Entity implements IProjectile {
 		
 		this.dataWatcher.updateObject(16, (byte)this.config.style);
 		this.dataWatcher.updateObject(17, (byte)this.config.trail);
+	}
+	
+	public boolean attackEntityFrom(DamageSource source, float amount) {
+		
+		this.setBeenAttacked();
+		
+		if(source instanceof EntityDamageSource) {
+			EntityDamageSource dmg = (EntityDamageSource) source;
+			
+			if(dmg.damageType.equals("player")) {
+				this.motionX *= -1.5;
+				this.motionY *= -1.5;
+				this.motionZ *= -1.5;
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -189,7 +207,6 @@ public class EntityBulletBase extends Entity implements IProjectile {
 	
 	@Override
 	public void onUpdate() {
-		
 		super.onUpdate();
 		
 		if(config == null)
@@ -198,6 +215,20 @@ public class EntityBulletBase extends Entity implements IProjectile {
 		if(config == null){
 			this.setDead();
 			return;
+		}
+		
+		if(this.config.blackPowder && this.ticksExisted == 1) {
+			
+			for(int i = 0; i < 15; i++) {
+				double mod = rand.nextDouble();
+				this.worldObj.spawnParticle("smoke", this.posX, this.posY, this.posZ,
+						(this.motionX + rand.nextGaussian() * 0.05) * mod,
+						(this.motionY + rand.nextGaussian() * 0.05) * mod,
+						(this.motionZ + rand.nextGaussian() * 0.05) * mod);
+			}
+			
+			double mod = 0.5;
+			this.worldObj.spawnParticle("flame", this.posX + this.motionX * mod, this.posY + this.motionY * mod, this.posZ + this.motionZ * mod, 0, 0, 0);
 		}
 		
 		if(config.maxAge == 0) {
@@ -476,23 +507,13 @@ public class EntityBulletBase extends Entity implements IProjectile {
 		
 		if(config.rainbow > 0 && !worldObj.isRemote) {
 			this.worldObj.playSoundEffect(this.posX, this.posY, this.posZ, "random.explode", 100.0f, this.worldObj.rand.nextFloat() * 0.1F + 0.9F);
+			worldObj.spawnEntityInWorld(EntityNukeExplosionMK3.statFacFleija(worldObj, posX, posY, posZ, config.rainbow));
 
-			EntityNukeExplosionMK3 entity = new EntityNukeExplosionMK3(this.worldObj);
-			entity.posX = this.posX;
-			entity.posY = this.posY;
-			entity.posZ = this.posZ;
-			entity.destructionRange = config.rainbow;
-			entity.speed = 25;
-			entity.coefficient = 1.0F;
-			entity.waste = false;
-
-			this.worldObj.spawnEntityInWorld(entity);
-	    		
-	    	EntityCloudFleijaRainbow cloud = new EntityCloudFleijaRainbow(this.worldObj, config.rainbow);
-	    	cloud.posX = this.posX;
-	    	cloud.posY = this.posY;
-	    	cloud.posZ = this.posZ;
-	    	this.worldObj.spawnEntityInWorld(cloud);
+			EntityCloudFleijaRainbow cloud = new EntityCloudFleijaRainbow(this.worldObj, config.rainbow);
+			cloud.posX = this.posX;
+			cloud.posY = this.posY;
+			cloud.posZ = this.posZ;
+			this.worldObj.spawnEntityInWorld(cloud);
 		}
 		
 		if(config.nuke > 0 && !worldObj.isRemote) {

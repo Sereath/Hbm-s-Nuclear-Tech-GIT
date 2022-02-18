@@ -4,12 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemCatalyst;
 import com.hbm.items.machine.ItemSatChip;
@@ -32,7 +31,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 
-public class TileEntityAMSBase extends TileEntity implements ISidedInventory, ISource, IFluidContainer, IFluidAcceptor {
+public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IFluidContainer, IFluidAcceptor {
 
 	private ItemStack slots[];
 
@@ -49,7 +48,6 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 	public int mode = 0;
 	public boolean locked = false;
 	public FluidTank[] tanks;
-	public List<IConsumer> list = new ArrayList();
 	public int color = -1;
 	
 	Random rand = new Random();
@@ -63,10 +61,10 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 	public TileEntityAMSBase() {
 		slots = new ItemStack[16];
 		tanks = new FluidTank[4];
-		tanks[0] = new FluidTank(FluidType.COOLANT, 8000, 0);
-		tanks[1] = new FluidTank(FluidType.CRYOGEL, 8000, 1);
-		tanks[2] = new FluidTank(FluidType.DEUTERIUM, 8000, 2);
-		tanks[3] = new FluidTank(FluidType.TRITIUM, 8000, 3);
+		tanks[0] = new FluidTank(Fluids.COOLANT, 8000, 0);
+		tanks[1] = new FluidTank(Fluids.CRYOGEL, 8000, 1);
+		tanks[2] = new FluidTank(Fluids.DEUTERIUM, 8000, 2);
+		tanks[3] = new FluidTank(Fluids.TRITIUM, 8000, 3);
 	}
 
 	@Override
@@ -247,9 +245,6 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 				{
 					age = 0;
 				}
-				
-				if(age == 9 || age == 19)
-					ffgeuaInit();
 
 				tanks[0].setType(0, 1, slots);
 				tanks[1].setType(2, 3, slots);
@@ -396,29 +391,18 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 	}
 	
 	private int getCoolingStrength(FluidType type) {
-		switch(type) {
-		case WATER:
-			return 5;
-		case OIL:
-			return 15;
-		case COOLANT:
-			return this.heat / 250;
-		case CRYOGEL:
-			return this.heat > heat/2 ? 25 : 5;
-		default:
-			return 0;
-		}
+		
+		if(type == Fluids.WATER) return 5;
+		if(type == Fluids.OIL) return 15;
+		if(type == Fluids.COOLANT) return this.heat / 250;
+		if(type == Fluids.CRYOGEL) return this.heat > heat/2 ? 25 : 5;
+		return 0;
 	}
 	
 	private int getFuelPower(FluidType type) {
-		switch(type) {
-		case DEUTERIUM:
-			return 50;
-		case TRITIUM:
-			return 75;
-		default:
-			return 0;
-		}
+		if(type == Fluids.DEUTERIUM) return 50;
+		if(type == Fluids.TRITIUM) return 75;
+		return 0;
 	}
 	
 	private float calcField(int a, int b, int c, int d) {
@@ -485,7 +469,7 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -499,7 +483,7 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(i);
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -525,60 +509,15 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index < 4 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index < 4 && tanks[index] != null)
 			tanks[index].setTankType(type);
-	}
-
-	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord - 2, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord + 2, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord - 2, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord + 2, getTact());
-		ffgeua(this.xCoord, this.yCoord - 1, this.zCoord, getTact());
-	}
-	
-	@Override
-	public boolean getTact() {
-		if(age >= 0 && age < 10)
-		{
-			return true;
-		}
-		
-		return false;
-	}
-
-	@Override
-	public long getSPower() {
-		return power;
-	}
-
-	@Override
-	public void setSPower(long i) {
-		this.power = i;
-	}
-
-	@Override
-	public List<IConsumer> getList() {
-		return list;
-	}
-
-	@Override
-	public void clearList() {
-		this.list.clear();
 	}
 	
 	@Override
@@ -591,16 +530,5 @@ public class TileEntityAMSBase extends TileEntity implements ISidedInventory, IS
 	public double getMaxRenderDistanceSquared()
 	{
 		return 65536.0D;
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		list.add(tanks[2]);
-		list.add(tanks[3]);
-		
-		return list;
 	}
 }

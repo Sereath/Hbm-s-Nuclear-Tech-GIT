@@ -3,19 +3,19 @@ package com.hbm.tileentity.machine;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
 import com.hbm.interfaces.IFluidSource;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
-import com.hbm.inventory.MachineRecipes;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
+import com.hbm.inventory.recipes.MachineRecipes;
 import com.hbm.lib.Library;
 import com.hbm.packet.AuxElectricityPacket;
 import com.hbm.packet.PacketDispatcher;
 
 import api.hbm.energy.IBatteryItem;
+import api.hbm.energy.IEnergyGenerator;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ISidedInventory;
@@ -23,15 +23,15 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityMachineTurbine extends TileEntity implements ISidedInventory, IFluidContainer, IFluidAcceptor, IFluidSource, ISource {
+public class TileEntityMachineTurbine extends TileEntity implements ISidedInventory, IFluidContainer, IFluidAcceptor, IFluidSource, IEnergyGenerator {
 
 	private ItemStack slots[];
 
 	public long power;
 	public static final long maxPower = 1000000;
 	public int age = 0;
-	public List<IConsumer> list1 = new ArrayList();
 	public List<IFluidAcceptor> list2 = new ArrayList();
 	public FluidTank[] tanks;
 	
@@ -44,8 +44,8 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 	public TileEntityMachineTurbine() {
 		slots = new ItemStack[7];
 		tanks = new FluidTank[2];
-		tanks[0] = new FluidTank(FluidType.STEAM, 64000, 0);
-		tanks[1] = new FluidTank(FluidType.WATER, 128000, 1);
+		tanks[0] = new FluidTank(Fluids.STEAM, 64000, 0);
+		tanks[1] = new FluidTank(Fluids.SPENTSTEAM, 128000, 1);
 	}
 
 	@Override
@@ -222,7 +222,9 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 			}
 			
 			fillFluidInit(tanks[1].getTankType());
-			ffgeuaInit();
+			
+			for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS)
+				this.sendPower(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, dir);
 
 			tanks[0].setType(0, 1, slots);
 			tanks[0].loadTank(2, 3, slots);
@@ -231,7 +233,7 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 			Object[] outs = MachineRecipes.getTurbineOutput(tanks[0].getTankType());
 			
 			if(outs == null) {
-				tanks[1].setTankType(FluidType.NONE);
+				tanks[1].setTankType(Fluids.NONE);
 			} else {
 				tanks[1].setTankType((FluidType) outs[0]);
 				
@@ -257,22 +259,6 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 
 			PacketDispatcher.wrapper.sendToAllAround(new AuxElectricityPacket(xCoord, yCoord, zCoord, power), new TargetPoint(worldObj.provider.dimensionId, xCoord, yCoord, zCoord, 50));
 		}
-	}
-
-	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord, this.yCoord + 1, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord - 1, this.zCoord, getTact());
-		ffgeua(this.xCoord - 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord + 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord - 1, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord + 1, getTact());
 	}
 
 	@Override
@@ -302,7 +288,7 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(i);
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -320,7 +306,7 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		
@@ -328,24 +314,15 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		
-		return list;
 	}
 	
 	@Override
@@ -359,22 +336,17 @@ public class TileEntityMachineTurbine extends TileEntity implements ISidedInvent
 	}
 
 	@Override
-	public long getSPower() {
+	public long getPower() {
 		return power;
 	}
 
 	@Override
-	public void setSPower(long i) {
+	public long getMaxPower() {
+		return maxPower;
+	}
+
+	@Override
+	public void setPower(long i) {
 		this.power = i;
-	}
-
-	@Override
-	public List<IConsumer> getList() {
-		return list1;
-	}
-
-	@Override
-	public void clearList() {
-		this.list1.clear();
 	}
 }

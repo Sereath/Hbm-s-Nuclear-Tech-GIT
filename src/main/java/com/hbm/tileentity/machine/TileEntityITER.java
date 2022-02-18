@@ -5,20 +5,21 @@ import java.util.List;
 
 import com.hbm.blocks.ModBlocks;
 import com.hbm.blocks.machine.MachineITER;
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidSource;
-import com.hbm.inventory.BreederRecipes;
-import com.hbm.inventory.BreederRecipes.BreederRecipe;
 import com.hbm.inventory.FluidTank;
-import com.hbm.inventory.FusionRecipes;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
+import com.hbm.inventory.recipes.BreederRecipes;
+import com.hbm.inventory.recipes.FusionRecipes;
+import com.hbm.inventory.recipes.BreederRecipes.BreederRecipe;
 import com.hbm.items.ModItems;
 import com.hbm.items.special.ItemFusionShield;
 import com.hbm.lib.Library;
 import com.hbm.main.MainRegistry;
 import com.hbm.tileentity.TileEntityMachineBase;
 
+import api.hbm.energy.IEnergyUser;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.entity.player.EntityPlayer;
@@ -26,8 +27,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.Vec3;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityITER extends TileEntityMachineBase implements IConsumer, IFluidAcceptor, IFluidSource {
+public class TileEntityITER extends TileEntityMachineBase implements IEnergyUser, IFluidAcceptor, IFluidSource {
 	
 	public long power;
 	public static final long maxPower = 10000000;
@@ -50,9 +52,9 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 	public TileEntityITER() {
 		super(5);
 		tanks = new FluidTank[2];
-		tanks[0] = new FluidTank(FluidType.WATER, 1280000, 0);
-		tanks[1] = new FluidTank(FluidType.ULTRAHOTSTEAM, 128000, 1);
-		plasma = new FluidTank(FluidType.PLASMA_DT, 16000, 2);
+		tanks[0] = new FluidTank(Fluids.WATER, 1280000, 0);
+		tanks[1] = new FluidTank(Fluids.ULTRAHOTSTEAM, 128000, 1);
+		plasma = new FluidTank(Fluids.PLASMA_DT, 16000, 2);
 	}
 
 	@Override
@@ -160,6 +162,9 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 			
 			this.networkPack(data, 250);
 			/// END Notif packets ///
+
+			this.trySubscribe(worldObj, xCoord, yCoord + 3, zCoord, ForgeDirection.UP);
+			this.trySubscribe(worldObj, xCoord, yCoord - 3, zCoord, ForgeDirection.DOWN);
 			
 		} else {
 			
@@ -187,10 +192,10 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 		BreederRecipe out = BreederRecipes.getOutput(slots[1]);
 		
 		if(slots[1] != null && slots[1].getItem() == ModItems.meteorite_sword_irradiated)
-			out = new BreederRecipe(ModItems.meteorite_sword_fused, 1);
+			out = new BreederRecipe(ModItems.meteorite_sword_fused, 1000);
 		
 		if(slots[1] != null && slots[1].getItem() == ModItems.meteorite_sword_fused)
-			out = new BreederRecipe(ModItems.meteorite_sword_baleful, 4);
+			out = new BreederRecipe(ModItems.meteorite_sword_baleful, 4000);
 		
 		if(out == null) {
 			this.progress = 0;
@@ -204,7 +209,7 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 		
 		int level = FusionRecipes.getBreedingLevel(plasma.getTankType());
 		
-		if(out.heat > level) {
+		if(out.flux > level) {
 			this.progress = 0;
 			return;
 		}
@@ -303,7 +308,7 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if (index < 2 && tanks[index] != null)
 			tanks[index].setFill(fill);
 		
@@ -312,7 +317,7 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if (type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(i);
 		else if (type.name().equals(tanks[1].getTankType().name()))
@@ -322,22 +327,12 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if (index < 2 && tanks[index] != null)
 			tanks[index].setTankType(type);
 		
 		if(index == 2)
 			plasma.setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		list.add(plasma);
-		
-		return list;
 	}
 
 	@Override
@@ -383,7 +378,7 @@ public class TileEntityITER extends TileEntityMachineBase implements IConsumer, 
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if (type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		else if (type.name().equals(tanks[1].getTankType().name()))

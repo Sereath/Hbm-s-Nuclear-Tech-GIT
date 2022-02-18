@@ -6,10 +6,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.inventory.CrystallizerRecipes;
-import com.hbm.inventory.MachineRecipes;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.inventory.gui.GUICrystallizer;
+import com.hbm.inventory.recipes.CrystallizerRecipes;
+import com.hbm.inventory.recipes.MachineRecipes;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemFluidIcon;
 import com.hbm.tileentity.machine.TileEntityMachineCrystallizer;
@@ -31,7 +31,7 @@ public class CrystallizerRecipeHandler extends TemplateRecipeHandler {
 
 		public RecipeSet(Object input, ItemStack result) {
 			this.input = new PositionedStack(input, 75, 24);
-			this.acid = new PositionedStack(ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, FluidType.ACID.ordinal()), TileEntityMachineCrystallizer.acidRequired), 39, 24);
+			this.acid = new PositionedStack(ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, Fluids.ACID.ordinal()), TileEntityMachineCrystallizer.acidRequired), 39, 24);
 			this.result = new PositionedStack(result, 135, 24);
 		}
 
@@ -93,8 +93,13 @@ public class CrystallizerRecipeHandler extends TemplateRecipeHandler {
 		
 		for (Map.Entry<Object, Object> recipe : recipes.entrySet()) {
 			
-			if (NEIServerUtils.areStacksSameTypeCrafting((ItemStack)recipe.getValue(), result))
+			if(NEIServerUtils.areStacksSameTypeCrafting((ItemStack)recipe.getValue(), result)) {
+				
+				if(recipe.getKey() instanceof ItemStack && ((ItemStack)recipe.getKey()).getItem() == ModItems.scrap_plastic)
+					continue;
+				
 				this.arecipes.add(new RecipeSet(recipe.getKey(), (ItemStack)recipe.getValue()));
+			}
 		}
 	}
 
@@ -112,13 +117,16 @@ public class CrystallizerRecipeHandler extends TemplateRecipeHandler {
 
 	@Override
 	public void loadUsageRecipes(ItemStack ingredient) {
+		
+		if(ingredient.getItem() == ModItems.scrap_plastic)
+			return;
 
 		Map<Object, Object> recipes = CrystallizerRecipes.getRecipes();
 		
 		for (Map.Entry<Object, Object> recipe : recipes.entrySet()) {
 			
 			if(NEIServerUtils.areStacksSameTypeCrafting(ingredient, ItemFluidIcon.addQuantity(
-							new ItemStack(ModItems.fluid_icon, 1, FluidType.ACID.ordinal()), TileEntityMachineCrystallizer.acidRequired))) {
+							new ItemStack(ModItems.fluid_icon, 1, Fluids.ACID.ordinal()), TileEntityMachineCrystallizer.acidRequired))) {
 				
 				if(recipe.getKey() instanceof ItemStack) {
 					this.arecipes.add(new RecipeSet(recipe.getKey(), (ItemStack)recipe.getValue()));

@@ -54,24 +54,24 @@ public class Gun50AEFactory {
 	static float inaccuracy = 0.0005F;
 	public static BulletConfiguration get50AEConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.ammo_50ae;
 		bullet.spread *= inaccuracy;
-		bullet.dmgMin = 15;
-		bullet.dmgMax = 18;
+		bullet.dmgMin = 28;
+		bullet.dmgMax = 32;
 		
 		return bullet;
 	}
 
 	public static BulletConfiguration get50APConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.ammo_50ae_ap;
 		bullet.spread *= inaccuracy;
-		bullet.dmgMin = 20;
-		bullet.dmgMax = 22;
+		bullet.dmgMin = 30;
+		bullet.dmgMax = 36;
 		bullet.leadChance = 10;
 		bullet.wear = 15;
 		
@@ -80,12 +80,12 @@ public class Gun50AEFactory {
 
 	public static BulletConfiguration get50DUConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.ammo_50ae_du;
 		bullet.spread *= inaccuracy;
-		bullet.dmgMin = 24;
-		bullet.dmgMax = 28;
+		bullet.dmgMin = 38;
+		bullet.dmgMax = 46;
 		bullet.leadChance = 50;
 		bullet.wear = 25;
 		
@@ -94,12 +94,12 @@ public class Gun50AEFactory {
 
 	public static BulletConfiguration get50StarConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.ammo_50ae_star;
 		bullet.spread *= inaccuracy;
-		bullet.dmgMin = 48;
-		bullet.dmgMax = 56;
+		bullet.dmgMin = 52;
+		bullet.dmgMax = 60;
 		bullet.leadChance = 100;
 		bullet.wear = 25;
 		

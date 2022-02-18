@@ -12,7 +12,6 @@ import com.hbm.interfaces.IBulletUpdateBehavior;
 import com.hbm.interfaces.Untested;
 import com.hbm.lib.ModDamageSource;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.item.Item;
 import net.minecraft.potion.PotionEffect;
@@ -64,6 +63,9 @@ public class BulletConfiguration {
 	public boolean doesBreakGlass;
 	//whether the bullet should stay alive after colliding with a block
 	public boolean liveAfterImpact;
+	
+	//creates a "muzzle flash" and a ton of smoke with every projectile spawned
+	public boolean blackPowder = false;
 	
 	//bullet effects
 	public List<PotionEffect> effects;

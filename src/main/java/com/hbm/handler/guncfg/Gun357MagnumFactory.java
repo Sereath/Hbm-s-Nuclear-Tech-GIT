@@ -6,6 +6,7 @@ import com.hbm.handler.BulletConfigSyncingUtil;
 import com.hbm.handler.BulletConfiguration;
 import com.hbm.handler.GunConfiguration;
 import com.hbm.items.ModItems;
+import com.hbm.lib.ModDamageSource;
 import com.hbm.potion.HbmPotion;
 import com.hbm.render.util.RenderScreenOverlay.Crosshair;
 
@@ -192,33 +193,33 @@ public class Gun357MagnumFactory {
 	
 	public static BulletConfiguration getRevIronConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.gun_revolver_iron_ammo;
-		bullet.dmgMin = 2;
-		bullet.dmgMax = 4;
+		bullet.dmgMin = 8;
+		bullet.dmgMax = 10;
 		
 		return bullet;
 	}
 	
 	public static BulletConfiguration getRevSteelConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.gun_revolver_ammo;
-		bullet.dmgMin = 3;
-		bullet.dmgMax = 5;
+		bullet.dmgMin = 18;
+		bullet.dmgMax = 22;
 		
 		return bullet;
 	}
 	
 	public static BulletConfiguration getRevLeadConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.gun_revolver_lead_ammo;
-		bullet.dmgMin = 2;
-		bullet.dmgMax = 3;
+		bullet.dmgMin = 10;
+		bullet.dmgMax = 15;
 		
 		bullet.effects = new ArrayList();
 		bullet.effects.add(new PotionEffect(HbmPotion.radiation.id, 10 * 20, 4));
@@ -228,29 +229,29 @@ public class Gun357MagnumFactory {
 	
 	public static BulletConfiguration getRevGoldConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.gun_revolver_gold_ammo;
-		bullet.dmgMin = 10;
-		bullet.dmgMax = 15;
+		bullet.dmgMin = 25;
+		bullet.dmgMax = 28;
 		
 		return bullet;
 	}
 	
 	public static BulletConfiguration getRevDeshConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.ammo_357_desh;
-		bullet.dmgMin = 15;
-		bullet.dmgMax = 17;
+		bullet.dmgMin = 30;
+		bullet.dmgMax = 33;
 		
 		return bullet;
 	}
 	
 	public static BulletConfiguration getRevSchrabidiumConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.gun_revolver_schrabidium_ammo;
 		bullet.dmgMin = 10000;
@@ -262,22 +263,22 @@ public class Gun357MagnumFactory {
 	
 	public static BulletConfiguration getRevCursedConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.gun_revolver_cursed_ammo;
-		bullet.dmgMin = 12;
-		bullet.dmgMax = 15;
+		bullet.dmgMin = 18;
+		bullet.dmgMax = 25;
 		
 		return bullet;
 	}
 	
 	public static BulletConfiguration getRevNightmareConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.gun_revolver_nightmare_ammo;
 		bullet.dmgMin = 1;
-		bullet.dmgMax = 50;
+		bullet.dmgMax = 100;
 		
 		return bullet;
 	}
@@ -290,11 +291,14 @@ public class Gun357MagnumFactory {
 		bullet.spread *= 10;
 		bullet.bulletsMin = 4;
 		bullet.bulletsMax = 6;
-		bullet.dmgMin = 50;
-		bullet.dmgMax = 150;
+		bullet.dmgMin = 25;
+		bullet.dmgMax = 100;
+		bullet.doesRicochet = false;
 		bullet.destroysBlocks = true;
 		bullet.style = bullet.STYLE_BOLT;
 		bullet.trail = bullet.BOLT_NIGHTMARE;
+		
+		bullet.damageType = ModDamageSource.s_laser;
 		
 		return bullet;
 	}

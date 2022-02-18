@@ -37,6 +37,7 @@
     "block.rbmk_explosion": {"category": "block", "sounds": [{"name": "block/rbmk_explosion", "stream": false}]},
     "block.rbmk_az5_cover": {"category": "block", "sounds": [{"name": "block/rbmk_az5_cover", "stream": false}]},
     "block.chungusLever": {"category": "block", "sounds": [{"name": "block/chungusLever", "stream": false}]},
+    "block.bobble": {"category": "block", "sounds": [{"name": "block/bobble", "stream": false}]},
     
 	"item.techBleep": {"category": "player", "sounds": [{"name": "tool/techBleep", "stream": false}]},
     "item.techBoop": {"category": "player", "sounds": [{"name": "tool/techBoop", "stream": false}]},
@@ -148,6 +149,7 @@
     "weapon.cDeploy": {"category": "player", "sounds": [{"name": "weapon/cDeploy", "stream": false}]},
     "weapon.cSwing": {"category": "player", "sounds": [{"name": "weapon/cSwing", "stream": false}]},
     "weapon.extinguisher": {"category": "player", "sounds": [{"name": "weapon/extinguisher", "stream": false}]},
+    "weapon.robin_explosion": {"category": "player", "sounds": [{"name": "weapon/robin_explosion", "stream": false}]},
     
     "weapon.dFlash": {"category": "player", "sounds": [{"name": "weapon/dFlash", "stream": false}]},
 
@@ -181,15 +183,20 @@
     "entity.ducc": {"category": "neutral", "sounds": ["entity/ducc1", "entity/ducc2"]},
     "entity.slicer": {"category": "neutral", "sounds": ["entity/slicer1", "entity/slicer2", "entity/slicer3", "entity/slicer4"]},
     "entity.megaquacc": {"category": "hostile", "sounds": [{"name": "entity/megaquacc", "stream": false}]},
-    "entity.vomit": {"category": "player", "sounds": [{"name": "entity/vomit", "stream": false}]},
     "entity.ufoBeam": {"category": "hostile", "sounds": [{"name": "entity/ufoBeamShort", "stream": false}]},
     "entity.ufoBlast": {"category": "hostile", "sounds": [{"name": "entity/ufoBlast", "stream": false}]},
+    "entity.siegeIdle": {"category": "hostile", "sounds": ["entity/siegeIdle1"]},
+    "entity.siegeHurt": {"category": "hostile", "sounds": ["entity/siegeHurt1", "entity/siegeHurt2"]},
+    "entity.siegeDeath": {"category": "hostile", "sounds": ["entity/siegeDeath1", "entity/siegeDeath2", "entity/siegeDeath3"]},
     
     "step.metal": {"category": "player", "sounds": [{"name": "footsteps/metal", "stream": false}]},
     "step.iron_jump": {"category": "player", "sounds": [{"name": "footsteps/iron_jump", "stream": false}]},
     "step.iron_land": {"category": "player", "sounds": [{"name": "footsteps/iron_land", "stream": false}]},
     "step.iron": {"category": "player", "sounds": ["footsteps/iron1", "footsteps/iron2", "footsteps/iron3", "footsteps/iron4"]},
     "step.metalBlock": {"category": "block", "sounds": ["footsteps/metalStep1", "footsteps/metalStep2", "footsteps/metalStep3", "footsteps/metalStep4"]},
+    
+    "player.vomit": {"category": "player", "sounds": [{"name": "player/vomit", "stream": false}]},
+    "player.cough": {"category": "player", "sounds": ["player/cough1", "player/cough2", "player/cough3", "player/cough4"]},
     
     "potatos.random": {"category": "player", "sounds": ["potatos/randResponse0", "potatos/randResponse1", "potatos/randResponse2", "potatos/randResponse3", "potatos/randResponse4", "potatos/randResponse5", "potatos/randResponse6", "potatos/randResponse7"]},
     

@@ -5,17 +5,18 @@ import java.util.List;
 
 import com.hbm.handler.MissileStruct;
 import com.hbm.entity.missile.EntitySoyuz;
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
 import com.hbm.main.MainRegistry;
 import com.hbm.sound.AudioWrapper;
 import com.hbm.tileentity.TileEntityMachineBase;
 
+import api.hbm.energy.IEnergyUser;
 import api.hbm.item.IDesignatorItem;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
@@ -26,8 +27,9 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.Vec3;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements ISidedInventory, IConsumer, IFluidContainer, IFluidAcceptor {
+public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements ISidedInventory, IEnergyUser, IFluidContainer, IFluidAcceptor {
 
 	public long power;
 	public static final long maxPower = 1000000;
@@ -46,8 +48,8 @@ public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements IS
 	public TileEntitySoyuzLauncher() {
 		super(27);
 		tanks = new FluidTank[2];
-		tanks[0] = new FluidTank(FluidType.KEROSENE, 128000, 0);
-		tanks[1] = new FluidTank(FluidType.OXYGEN, 128000, 1);
+		tanks[0] = new FluidTank(Fluids.KEROSENE, 128000, 0);
+		tanks[1] = new FluidTank(Fluids.OXYGEN, 128000, 1);
 	}
 
 	@Override
@@ -59,6 +61,8 @@ public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements IS
 	public void updateEntity() {
 
 		if (!worldObj.isRemote) {
+			
+			this.trySubscribe(worldObj, xCoord, yCoord - 1, zCoord, ForgeDirection.DOWN);
 
 			tanks[0].loadTank(4, 5, slots);
 			tanks[1].loadTank(6, 7, slots);
@@ -301,7 +305,7 @@ public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements IS
 		if(mode == 1)
 			return 0;
 		
-		if(slots[2] != null && slots[2].getItem() == ModItems.sat_gerald) {
+		if(slots[2] != null && (slots[2].getItem() == ModItems.sat_gerald || slots[2].getItem() == ModItems.sat_lunar_miner)) {
 			if(slots[3] != null && slots[3].getItem() == ModItems.missile_soyuz_lander)
 				return 2;
 			return 1;
@@ -353,7 +357,7 @@ public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements IS
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if (type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		else if (type.name().equals(tanks[1].getTankType().name()))
@@ -363,13 +367,13 @@ public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements IS
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if (index < 2 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setFluidFill(int fill, FluidType type) {
+	public void setFillForTransfer(int fill, FluidType type) {
 		if (type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(fill);
 		else if (type.name().equals(tanks[1].getTankType().name()))
@@ -377,18 +381,9 @@ public class TileEntitySoyuzLauncher extends TileEntityMachineBase implements IS
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if (index < 2 && tanks[index] != null)
 			tanks[index].setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		
-		return list;
 	}
 
 	@Override

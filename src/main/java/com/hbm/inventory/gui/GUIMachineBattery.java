@@ -4,6 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.ResourceLocation;
 
 import org.lwjgl.opengl.GL11;
@@ -12,7 +13,8 @@ import com.hbm.inventory.container.ContainerMachineBattery;
 import com.hbm.lib.RefStrings;
 import com.hbm.packet.AuxButtonPacket;
 import com.hbm.packet.PacketDispatcher;
-import com.hbm.tileentity.machine.TileEntityMachineBattery;
+import com.hbm.tileentity.machine.storage.TileEntityMachineBattery;
+import com.hbm.util.BobMathUtil;
 
 public class GUIMachineBattery extends GuiInfoContainer {
 	
@@ -32,6 +34,23 @@ public class GUIMachineBattery extends GuiInfoContainer {
 		super.drawScreen(mouseX, mouseY, f);
 
 		this.drawElectricityInfo(this, mouseX, mouseY, guiLeft + 62, guiTop + 69 - 52, 52, 52, battery.power, battery.maxPower);
+		
+		long delta = battery.log[19] - battery.log[0];
+		String deltaText = BobMathUtil.getShortNumber(Math.abs(delta)) + "HE/s";
+		
+		if(delta > 0)
+			deltaText = EnumChatFormatting.GREEN + "+" + deltaText;
+		else if(delta < 0)
+			deltaText = EnumChatFormatting.RED + "-" + deltaText;
+		else
+			deltaText = EnumChatFormatting.YELLOW + "+" + deltaText;
+
+		String[] info = {
+				BobMathUtil.getShortNumber(battery.power) + "/" + BobMathUtil.getShortNumber(battery.maxPower) + "HE",
+				deltaText
+		};
+		
+		this.drawCustomInfoStat(mouseX, mouseY, guiLeft + 62, guiTop + 69 - 52, 52, 52, mouseX, mouseY, info);
 
 		String[] text = new String[] { "Click the buttons on the right",
 				"to change battery behavior for",

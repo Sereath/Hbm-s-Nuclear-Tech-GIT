@@ -4,7 +4,7 @@ import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
 import com.hbm.items.ModItems;
-import com.hbm.items.machine.ItemBattery;
+import com.hbm.items.machine.ItemBreedingRod.*;
 
 import net.minecraft.init.Items;
 import net.minecraft.item.Item;
@@ -112,13 +112,13 @@ public class HbmChestContents {
 			new WeightedRandomChestContent(ModItems.nugget_u238, 0, 3, 12, 5),
 			new WeightedRandomChestContent(ModItems.nugget_pu240, 0, 3, 8, 5),
 			new WeightedRandomChestContent(ModItems.nugget_neptunium, 0, 1, 4, 3),
-			new WeightedRandomChestContent(ModItems.rod_u238, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_neptunium, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.rod_pu240, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_dual_u238, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_dual_pu240, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_quad_u238, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_quad_pu240, 0, 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod, BreedingRodType.U238.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod, BreedingRodType.NP237.ordinal(), 1, 1, 4),
+			new WeightedRandomChestContent(ModItems.rod, BreedingRodType.RGP.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_dual, BreedingRodType.U238.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_dual, BreedingRodType.RGP.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_quad, BreedingRodType.U238.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_quad, BreedingRodType.RGP.ordinal(), 1, 1, 3),
 			new WeightedRandomChestContent(ModItems.bottle_quantum, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.gas_mask_m65, 60, 1, 1, 5),
 			new WeightedRandomChestContent(ModItems.hazmat_kit, 0, 1, 1, 1),
@@ -129,21 +129,21 @@ public class HbmChestContents {
 			new WeightedRandomChestContent(ModItems.nugget_u235, 0, 3, 12, 5),
 			new WeightedRandomChestContent(ModItems.nugget_pu238, 0, 3, 12, 5),
 			new WeightedRandomChestContent(ModItems.nugget_pu239, 0, 3, 12, 5),
-			new WeightedRandomChestContent(ModItems.rod_u235, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_pu239, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_dual_u235, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_dual_pu239, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_quad_u235, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_quad_pu239, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_uranium_fuel, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.rod_plutonium_fuel, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.rod_mox_fuel, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.rod_dual_uranium_fuel, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_dual_plutonium_fuel, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_dual_mox_fuel, 0, 1, 1, 3),
-			new WeightedRandomChestContent(ModItems.rod_quad_uranium_fuel, 0, 1, 1, 1),
-			new WeightedRandomChestContent(ModItems.rod_quad_plutonium_fuel, 0, 1, 1, 1),
-			new WeightedRandomChestContent(ModItems.rod_quad_mox_fuel, 0, 1, 1, 1),
+			new WeightedRandomChestContent(ModItems.rod, BreedingRodType.U235.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod, BreedingRodType.PU239.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_dual, BreedingRodType.U235.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_dual, BreedingRodType.PU239.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_quad, BreedingRodType.U235.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_quad, BreedingRodType.PU239.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_uranium_fuel, 0, 1, 1, 4),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_plutonium_fuel, 0, 1, 1, 4),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_mox_fuel, 0, 1, 1, 4),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_lithium, 0, 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_thorium_fuel, 0, 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_dual, BreedingRodType.THF.ordinal(), 1, 1, 3),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_tritium, 0, 1, 1, 1),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_u233_fuel, 0, 1, 1, 1),
+			new WeightedRandomChestContent(ModItems.rod_zirnox_u235_fuel, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.pellet_rtg, 0, 1, 1, 3),
 			new WeightedRandomChestContent(ModItems.powder_thorium, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.powder_neptunium, 0, 1, 1, 1),
@@ -167,9 +167,9 @@ public class HbmChestContents {
 			new WeightedRandomChestContent(ModItems.gun_kit_1, 0, 2, 3, 4),
 			new WeightedRandomChestContent(ModItems.gun_rpg, 0, 1, 1, 3),
 			new WeightedRandomChestContent(ModItems.ammo_rocket, 0, 1, 6, 3),
-			new WeightedRandomChestContent(ModItems.rod_uranium_fuel, 0, 1, 1, 2),
-			new WeightedRandomChestContent(ModItems.rod_dual_uranium_fuel, 0, 1, 1, 2),
-			new WeightedRandomChestContent(ModItems.rod_quad_uranium_fuel, 0, 1, 1, 2),
+			new WeightedRandomChestContent(ModItems.rod, BreedingRodType.U235.ordinal(), 1, 1, 2),
+			new WeightedRandomChestContent(ModItems.billet_uranium_fuel, 0, 1, 1, 2),
+			new WeightedRandomChestContent(ModItems.ingot_uranium_fuel, 0, 1, 1, 2),
 			new WeightedRandomChestContent(ModItems.ammo_nuke_safe, 0, 1, 2, 1),
 			new WeightedRandomChestContent(ModItems.gun_fatman, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.bottle_nuka, 0, 1, 3, 6),
@@ -186,23 +186,17 @@ public class HbmChestContents {
 	private static WeightedRandomChestContent[] missile = new WeightedRandomChestContent[] {
 			new WeightedRandomChestContent(ModItems.missile_generic, 0, 1, 1, 4),
 			new WeightedRandomChestContent(ModItems.missile_incendiary, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.missile_cluster, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.missile_buster, 0, 1, 1, 4),
-			new WeightedRandomChestContent(Item.getItemFromBlock(ModBlocks.launch_pad), 0, 1, 1, 5),
 			new WeightedRandomChestContent(ModItems.gas_mask_m65, 0, 1, 1, 5),
 			new WeightedRandomChestContent(ModItems.battery_advanced, 0, 1, 1, 5),
 			new WeightedRandomChestContent(ModItems.designator, 0, 1, 1, 5),
 			new WeightedRandomChestContent(ModItems.crate_caller, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.thruster_small, 0, 1, 1, 5),
 			new WeightedRandomChestContent(ModItems.thruster_medium, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.thruster_large, 0, 1, 1, 2),
 			new WeightedRandomChestContent(ModItems.fuel_tank_small, 0, 1, 1, 5),
 			new WeightedRandomChestContent(ModItems.fuel_tank_medium, 0, 1, 1, 4),
-			new WeightedRandomChestContent(ModItems.fuel_tank_small, 0, 1, 1, 2),
-			new WeightedRandomChestContent(ModItems.warhead_mirvlet, 0, 1, 1, 1),
-			new WeightedRandomChestContent(ModItems.warhead_nuclear, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.bomb_caller, 0, 1, 1, 1),
-			new WeightedRandomChestContent(ModItems.bomb_caller, 3, 1, 1, 1) };
+			new WeightedRandomChestContent(ModItems.bomb_caller, 3, 1, 1, 1),
+			new WeightedRandomChestContent(ModItems.bottle_nuka, 0, 1, 3, 10) };
 
 	private static WeightedRandomChestContent[] spaceship = new WeightedRandomChestContent[] {
 			new WeightedRandomChestContent(ModItems.battery_advanced, 0, 1, 1, 5),
@@ -250,7 +244,7 @@ public class HbmChestContents {
 
 	private static WeightedRandomChestContent[] vault2 = new WeightedRandomChestContent[] {
 			new WeightedRandomChestContent(ModItems.ingot_desh, 0, 2, 6, 1),
-			new WeightedRandomChestContent(ItemBattery.getFullBattery(ModItems.battery_advanced_cell_4), 1, 1, 1),
+			new WeightedRandomChestContent(ModItems.battery_advanced_cell_4, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.powder_desh_mix, 0, 1, 5, 1),
 			new WeightedRandomChestContent(Items.diamond, 0, 3, 6, 1),
 			new WeightedRandomChestContent(ModItems.ammo_nuke, 0, 1, 1, 1),
@@ -266,7 +260,7 @@ public class HbmChestContents {
 
 	private static WeightedRandomChestContent[] vault3 = new WeightedRandomChestContent[] {
 			new WeightedRandomChestContent(ModItems.ingot_desh, 0, 6, 16, 1),
-			new WeightedRandomChestContent(ItemBattery.getFullBattery(ModItems.battery_lithium), 1, 1, 1),
+			new WeightedRandomChestContent(ModItems.battery_lithium, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.powder_power, 0, 1, 5, 1),
 			new WeightedRandomChestContent(ModItems.sat_chip, 0, 1, 1, 1),
 			new WeightedRandomChestContent(Items.diamond, 0, 5, 9, 1),
@@ -297,7 +291,7 @@ public class HbmChestContents {
 			new WeightedRandomChestContent(ModItems.nuke_starter_kit, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.weaponized_starblaster_cell, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.warhead_mirv, 0, 1, 1, 1),
-			new WeightedRandomChestContent(ItemBattery.getFullBattery(ModItems.battery_schrabidium_cell), 1, 1, 1),
+			new WeightedRandomChestContent(ModItems.battery_schrabidium_cell, 0, 1, 1, 1),
 			new WeightedRandomChestContent(ModItems.powder_nitan_mix, 0, 16, 32, 1) };
 	
 	/**
@@ -314,7 +308,7 @@ public class HbmChestContents {
 	 *         case 8: spaceship loot (reactor elements, super conductors)
 	 *         case 9: powder loot (secret chest with the five powders for NITAN)
 	 **/
-
+	//what kind of drugs did i take that made me thing this was supposed to be an acceptable way of doing things? what the hell?
 	public static WeightedRandomChestContent[] getLoot(int i) {
 		switch (i) {
 		case 1:

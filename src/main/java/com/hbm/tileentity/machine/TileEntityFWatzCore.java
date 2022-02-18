@@ -4,19 +4,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
 import com.hbm.interfaces.IReactor;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
 import com.hbm.packet.AuxElectricityPacket;
 import com.hbm.packet.PacketDispatcher;
 import com.hbm.world.machine.FWatz;
 
+import api.hbm.energy.IEnergyGenerator;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ISidedInventory;
@@ -27,7 +27,7 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
 
-public class TileEntityFWatzCore extends TileEntity implements ISidedInventory, IReactor, ISource, IFluidContainer, IFluidAcceptor {
+public class TileEntityFWatzCore extends TileEntity implements ISidedInventory, IReactor, IEnergyGenerator, IFluidContainer, IFluidAcceptor {
 
 	public long power;
 	public final static long maxPower = 10000000000L;
@@ -38,17 +38,15 @@ public class TileEntityFWatzCore extends TileEntity implements ISidedInventory, 
 	Random rand = new Random();
 	
 	private ItemStack slots[];
-	public int age = 0;
-	public List<IConsumer> list = new ArrayList();
 	
 	private String customName;
 
 	public TileEntityFWatzCore() {
 		slots = new ItemStack[7];
 		tanks = new FluidTank[3];
-		tanks[0] = new FluidTank(FluidType.COOLANT, 128000, 0);
-		tanks[1] = new FluidTank(FluidType.AMAT, 64000, 1);
-		tanks[2] = new FluidTank(FluidType.ASCHRAB, 64000, 2);
+		tanks[0] = new FluidTank(Fluids.COOLANT, 128000, 0);
+		tanks[1] = new FluidTank(Fluids.AMAT, 64000, 1);
+		tanks[2] = new FluidTank(Fluids.ASCHRAB, 64000, 2);
 	}
 	@Override
 	public int getSizeInventory() {
@@ -266,13 +264,10 @@ public class TileEntityFWatzCore extends TileEntity implements ISidedInventory, 
 	public void updateEntity() {
 		if (this.isStructureValid(this.worldObj) && !worldObj.isRemote) {
 
-			age++;
-			if (age >= 20) {
-				age = 0;
-			}
-
-			if (age == 9 || age == 19)
-				ffgeuaInit();
+			this.sendPower(worldObj, xCoord + 10, yCoord - 11, zCoord, Library.POS_X);
+			this.sendPower(worldObj, xCoord - 10, yCoord - 11, zCoord, Library.NEG_X);
+			this.sendPower(worldObj, xCoord, yCoord - 11, zCoord + 10, Library.POS_Z);
+			this.sendPower(worldObj, xCoord, yCoord - 11, zCoord - 10, Library.NEG_Z);
 
 			if (hasFuse() && getSingularityType() > 0) {
 				if(cooldown) {
@@ -374,65 +369,36 @@ public class TileEntityFWatzCore extends TileEntity implements ISidedInventory, 
 	public boolean isRunning() {
 		return FWatz.getPlasma(worldObj, this.xCoord, this.yCoord, this.zCoord) && this.isStructureValid(worldObj);
 	}
-
-	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord + 10, this.yCoord - 11, this.zCoord, getTact());
-		ffgeua(this.xCoord - 10, this.yCoord - 11, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord - 11, this.zCoord + 10, getTact());
-		ffgeua(this.xCoord, this.yCoord - 11, this.zCoord - 10, getTact());
-	}
 	
 	@Override
-	public boolean getTact() {
-		if(age >= 0 && age < 10)
-		{
-			return true;
-		}
-		
-		return false;
+	public long getMaxPower() {
+		return this.maxPower;
 	}
 
 	@Override
-	public long getSPower() {
+	public long getPower() {
 		return power;
 	}
 
 	@Override
-	public void setSPower(long i) {
+	public void setPower(long i) {
 		this.power = i;
 	}
 
 	@Override
-	public List<IConsumer> getList() {
-		return list;
-	}
-
-	@Override
-	public void clearList() {
-		this.list.clear();
-	}
-
-	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index < 3 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index < 3 && tanks[index] != null)
 			tanks[index].setTankType(type);
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tanks[1].getTankType().name()))
 			tanks[1].setFill(i);
 		else if(type.name().equals(tanks[2].getTankType().name()))
@@ -450,22 +416,12 @@ public class TileEntityFWatzCore extends TileEntity implements ISidedInventory, 
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tanks[1].getTankType().name()))
 			return tanks[1].getMaxFill();
 		else if(type.name().equals(tanks[2].getTankType().name()))
 			return tanks[2].getMaxFill();
 		else
 			return 0;
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		list.add(tanks[2]);
-		
-		return list;
 	}
 }
