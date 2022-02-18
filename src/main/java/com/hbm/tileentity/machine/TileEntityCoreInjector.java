@@ -3,9 +3,10 @@ package com.hbm.tileentity.machine;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.tileentity.TileEntityMachineBase;
 
 import cpw.mods.fml.relauncher.Side;
@@ -25,8 +26,8 @@ public class TileEntityCoreInjector extends TileEntityMachineBase implements IFl
 	public TileEntityCoreInjector() {
 		super(4);
 		tanks = new FluidTank[2];
-		tanks[0] = new FluidTank(FluidType.DEUTERIUM, 128000, 0);
-		tanks[1] = new FluidTank(FluidType.TRITIUM, 128000, 1);
+		tanks[0] = new FluidTank(Fluids.DEUTERIUM, 128000, 0);
+		tanks[1] = new FluidTank(Fluids.TRITIUM, 128000, 1);
 	}
 
 	@Override
@@ -102,7 +103,7 @@ public class TileEntityCoreInjector extends TileEntityMachineBase implements IFl
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if (type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		else if (type.name().equals(tanks[1].getTankType().name()))
@@ -112,7 +113,7 @@ public class TileEntityCoreInjector extends TileEntityMachineBase implements IFl
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if (type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(i);
 		else if (type.name().equals(tanks[1].getTankType().name()))
@@ -130,24 +131,15 @@ public class TileEntityCoreInjector extends TileEntityMachineBase implements IFl
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if (index < 2 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if (index < 2 && tanks[index] != null)
 			tanks[index].setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		
-		return list;
 	}
 	
 	@Override

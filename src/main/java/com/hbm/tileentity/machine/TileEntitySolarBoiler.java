@@ -5,14 +5,16 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidSource;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.lib.Library;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.ChunkCoordinates;
@@ -28,8 +30,8 @@ public class TileEntitySolarBoiler extends TileEntity implements IFluidAcceptor,
 	public HashSet<ChunkCoordinates> secondary = new HashSet();
 	
 	public TileEntitySolarBoiler() {
-		water = new FluidTank(FluidType.WATER, 16000, 0);
-		steam = new FluidTank(FluidType.STEAM, 1600000, 1);
+		water = new FluidTank(Fluids.WATER, 16000, 0);
+		steam = new FluidTank(Fluids.STEAM, 1600000, 1);
 	}
 
 	@Override
@@ -38,7 +40,7 @@ public class TileEntitySolarBoiler extends TileEntity implements IFluidAcceptor,
 		if(!worldObj.isRemote) {
 			
 			//if(worldObj.getTotalWorldTime() % 5 == 0) {
-				fillFluidInit(FluidType.STEAM);
+				fillFluidInit(Fluids.STEAM);
 			//}
 			
 			int process = heat / 10;
@@ -65,7 +67,7 @@ public class TileEntitySolarBoiler extends TileEntity implements IFluidAcceptor,
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index == 0)
 			water.setFill(fill);
 		if(index == 1)
@@ -73,15 +75,15 @@ public class TileEntitySolarBoiler extends TileEntity implements IFluidAcceptor,
 	}
 
 	@Override
-	public void setFluidFill(int fill, FluidType type) {
-		if(type == FluidType.WATER)
+	public void setFillForTransfer(int fill, FluidType type) {
+		if(type == Fluids.WATER)
 			water.setFill(fill);
-		if(type == FluidType.STEAM)
+		if(type == Fluids.STEAM)
 			steam.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index == 0)
 			water.setTankType(type);
 		if(index == 1)
@@ -89,15 +91,10 @@ public class TileEntitySolarBoiler extends TileEntity implements IFluidAcceptor,
 	}
 
 	@Override
-	public List<FluidTank> getTanks() {
-		return Arrays.asList(new FluidTank[] {water, steam});
-	}
-
-	@Override
 	public int getFluidFill(FluidType type) {
-		if(type == FluidType.WATER)
+		if(type == Fluids.WATER)
 			return water.getFill();
-		if(type == FluidType.STEAM)
+		if(type == Fluids.STEAM)
 			return steam.getFill();
 		
 		return 0;
@@ -120,10 +117,10 @@ public class TileEntitySolarBoiler extends TileEntity implements IFluidAcceptor,
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
-		if(type == FluidType.WATER)
+	public int getMaxFillForReceive(FluidType type) {
+		if(type == Fluids.WATER)
 			return water.getMaxFill();
-		if(type == FluidType.STEAM)
+		if(type == Fluids.STEAM)
 			return steam.getMaxFill();
 		
 		return 0;
@@ -137,6 +134,22 @@ public class TileEntitySolarBoiler extends TileEntity implements IFluidAcceptor,
 	@Override
 	public void clearFluidList(FluidType type) {
 		list.clear();
+	}
+
+	@Override
+	public void readFromNBT(NBTTagCompound nbt) {
+		super.readFromNBT(nbt);
+
+		this.water.readFromNBT(nbt, "water");
+		this.steam.readFromNBT(nbt, "steam");
+	}
+
+	@Override
+	public void writeToNBT(NBTTagCompound nbt) {
+		super.writeToNBT(nbt);
+
+		this.water.writeToNBT(nbt, "water");
+		this.steam.writeToNBT(nbt, "steam");
 	}
 	
 	AxisAlignedBB bb = null;

@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.hbm.config.VersatileConfig;
-import com.hbm.handler.FluidTypeHandler.FluidType;
 import com.hbm.handler.radiation.ChunkRadiationManager;
+import com.hbm.hazard.HazardRegistry;
+import com.hbm.hazard.HazardSystem;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidSource;
-import com.hbm.interfaces.IItemHazard;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.items.special.ItemWasteLong;
 import com.hbm.items.special.ItemWasteShort;
@@ -38,8 +40,8 @@ public class TileEntityStorageDrum extends TileEntityMachineBase implements IFlu
 	public TileEntityStorageDrum() {
 		super(24);
 		tanks = new FluidTank[2];
-		tanks[0] = new FluidTank(FluidType.WASTEFLUID, 16000, 0);
-		tanks[1] = new FluidTank(FluidType.WASTEGAS, 16000, 1);
+		tanks[0] = new FluidTank(Fluids.WASTEFLUID, 16000, 0);
+		tanks[1] = new FluidTank(Fluids.WASTEGAS, 16000, 1);
 	}
 
 	@Override
@@ -63,8 +65,8 @@ public class TileEntityStorageDrum extends TileEntityMachineBase implements IFlu
 					
 					Item item = slots[i].getItem();
 					
-					if(item instanceof IItemHazard && worldObj.getTotalWorldTime() % 20 == 0) {
-						rad += ((IItemHazard)item).getModule().radiation;
+					if(worldObj.getTotalWorldTime() % 20 == 0) {
+						rad += HazardSystem.getHazardLevelFromStack(slots[i], HazardRegistry.RADIATION);
 					}
 					
 					int meta = slots[i].getItemDamage();
@@ -97,8 +99,18 @@ public class TileEntityStorageDrum extends TileEntityMachineBase implements IFlu
 						slots[i] = new ItemStack(ModItems.nuclear_waste_short_depleted_tiny, 1, meta);
 					}
 					
-					if(item == ModItems.nugget_au198 && worldObj.rand.nextInt(VersatileConfig.getShortDecayChance() / 100) == 0) {
+					if(item == ModItems.ingot_au198 && worldObj.rand.nextInt(VersatileConfig.getShortDecayChance() / 100) == 0) {
+						slots[i] = new ItemStack(ModItems.ingot_mercury, 1, meta);
+					}
+					if(item == ModItems.ingot_au198 && worldObj.rand.nextInt(VersatileConfig.getShortDecayChance() / 20) == 0) {
 						slots[i] = new ItemStack(ModItems.nugget_mercury, 1, meta);
+					}
+					
+					if(item == ModItems.ingot_pb209 && worldObj.rand.nextInt(VersatileConfig.getShortDecayChance() / 50) == 0) {
+						slots[i] = new ItemStack(ModItems.ingot_bismuth, 1, meta);
+					}
+					if(item == ModItems.nugget_pb209 && worldObj.rand.nextInt(VersatileConfig.getShortDecayChance() / 10) == 0) {
+						slots[i] = new ItemStack(ModItems.nugget_bismuth, 1, meta);
 					}
 				}
 			}
@@ -180,7 +192,7 @@ public class TileEntityStorageDrum extends TileEntityMachineBase implements IFlu
 				item == ModItems.nuclear_waste_long_tiny || 
 				item == ModItems.nuclear_waste_short || 
 				item == ModItems.nuclear_waste_short_tiny || 
-				item == ModItems.nugget_au198)
+				item == ModItems.ingot_au198)
 			return true;
 		
 		return false;
@@ -200,7 +212,7 @@ public class TileEntityStorageDrum extends TileEntityMachineBase implements IFlu
 				item == ModItems.nuclear_waste_long_depleted_tiny || 
 				item == ModItems.nuclear_waste_short_depleted || 
 				item == ModItems.nuclear_waste_short_depleted_tiny || 
-				item == ModItems.nugget_mercury)
+				item == ModItems.ingot_mercury)
 			return true;
 		
 		return false;
@@ -247,7 +259,7 @@ public class TileEntityStorageDrum extends TileEntityMachineBase implements IFlu
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type == tanks[0].getTankType())
 			tanks[0].setFill(i);
 		else if(type == tanks[1].getTankType())
@@ -273,24 +285,15 @@ public class TileEntityStorageDrum extends TileEntityMachineBase implements IFlu
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-
-		return list;
 	}
 	
 	@Override

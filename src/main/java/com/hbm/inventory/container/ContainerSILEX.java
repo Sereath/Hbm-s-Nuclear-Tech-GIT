@@ -1,5 +1,6 @@
 package com.hbm.inventory.container;
 
+import com.hbm.inventory.SlotMachineOutput;
 import com.hbm.items.ModItems;
 import com.hbm.tileentity.machine.TileEntitySILEX;
 
@@ -15,23 +16,23 @@ public class ContainerSILEX extends Container {
 
 	public ContainerSILEX(InventoryPlayer invPlayer, TileEntitySILEX te) {
 		silex = te;
-
+		
 		//Input
-		this.addSlotToContainer(new Slot(te, 0, 116, 36));
+		this.addSlotToContainer(new Slot(te, 0, 80, 12));
 		//Fluid ID
-		this.addSlotToContainer(new Slot(te, 1, 44, 36));
+		this.addSlotToContainer(new Slot(te, 1, 8, 24));
 		//Fluid Container
-		this.addSlotToContainer(new Slot(te, 2, 62, 36));
-		this.addSlotToContainer(new Slot(te, 3, 80, 36));
+		this.addSlotToContainer(new Slot(te, 2, 8 + 18, 24));
+		this.addSlotToContainer(new Slot(te, 3, 8 + 18*2, 24));
 		//Output
-		this.addSlotToContainer(new Slot(te, 4, 116, 90));
+		this.addSlotToContainer(new SlotMachineOutput(te, 4, 116, 90));
 		//Output Queue
-		this.addSlotToContainer(new Slot(te, 5, 134, 72));
-		this.addSlotToContainer(new Slot(te, 6, 152, 72));
-		this.addSlotToContainer(new Slot(te, 7, 134, 90));
-		this.addSlotToContainer(new Slot(te, 8, 152, 90));
-		this.addSlotToContainer(new Slot(te, 9, 134, 108));
-		this.addSlotToContainer(new Slot(te, 10, 152, 108));
+		this.addSlotToContainer(new SlotMachineOutput(te, 5, 134, 72));
+		this.addSlotToContainer(new SlotMachineOutput(te, 6, 152, 72));
+		this.addSlotToContainer(new SlotMachineOutput(te, 7, 134, 90));
+		this.addSlotToContainer(new SlotMachineOutput(te, 8, 152, 90));
+		this.addSlotToContainer(new SlotMachineOutput(te, 9, 134, 108));
+		this.addSlotToContainer(new SlotMachineOutput(te, 10, 152, 108));
 		
 		for(int i = 0; i < 3; i++)
 		{

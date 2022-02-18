@@ -4,11 +4,10 @@ import java.util.List;
 import java.util.Random;
 
 import com.hbm.config.VersatileConfig;
-import com.hbm.explosion.ExplosionLarge;
 import com.hbm.extprop.HbmLivingProps;
 import com.hbm.handler.ArmorModHandler;
-import com.hbm.handler.FluidTypeHandler.FluidType;
 import com.hbm.interfaces.IPartiallyFillable;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.items.weapon.ItemGunBase;
 import com.hbm.lib.ModDamageSource;
@@ -255,18 +254,6 @@ public class ItemSyringe extends Item {
 			}
 		}
 
-		if(this == ModItems.gas_mask_filter && player.inventory.armorInventory[3] != null && (player.inventory.armorInventory[3].getItem() == ModItems.gas_mask || player.inventory.armorInventory[3].getItem() == ModItems.gas_mask_m65)) {
-			if(!world.isRemote) {
-				if(player.inventory.armorInventory[3].getItemDamage() == 0)
-					return stack;
-
-				player.inventory.armorInventory[3].setItemDamage(0);
-
-				world.playSoundAtEntity(player, "hbm:item.gasmaskScrew", 1.0F, 1.0F);
-				stack.stackSize--;
-			}
-		}
-
 		if(this == ModItems.gas_mask_filter_mono && player.inventory.armorInventory[3] != null && player.inventory.armorInventory[3].getItem() == ModItems.gas_mask_mono) {
 			if(!world.isRemote) {
 				if(player.inventory.armorInventory[3].getItemDamage() == 0)
@@ -297,7 +284,7 @@ public class ItemSyringe extends Item {
 
 				IPartiallyFillable fillable = (IPartiallyFillable) jetpack.getItem();
 				
-				if(fillable.getType(jetpack) != FluidType.KEROSENE)
+				if(fillable.getType(jetpack) != Fluids.KEROSENE)
 					return stack;
 				
 				int fill = Math.min(fillable.getFill(jetpack) + 1000, fillable.getMaxFill(jetpack));

@@ -8,6 +8,7 @@ import com.hbm.handler.HazmatRegistry;
 import com.hbm.handler.radiation.ChunkRadiationManager;
 import com.hbm.lib.ModDamageSource;
 import com.hbm.potion.HbmPotion;
+import com.hbm.util.ArmorRegistry.HazardClass;
 
 import api.hbm.entity.IRadiationImmune;
 import net.minecraft.entity.Entity;
@@ -122,7 +123,9 @@ public class ContaminationUtil {
 		
 		EntityLivingBase entity = (EntityLivingBase)e;
 		
-		if(!(entity instanceof EntityPlayer && ArmorUtil.checkForGasMask((EntityPlayer) entity)))
+		if(ArmorRegistry.hasAllProtection(entity, 3, HazardClass.PARTICLE_FINE))
+			ArmorUtil.damageGasMaskFilter(entity, i);
+		else
 			HbmLivingProps.incrementAsbestos(entity, i);
 	}
 	
@@ -213,6 +216,22 @@ public class ContaminationUtil {
 		player.addChatMessage(new ChatComponentTranslation("geiger.playerRes").appendSibling(new ChatComponentText(" " + resPrefix + res + "% (" + resKoeff + ")")).setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)));
 	}
 	
+	public static void printDosimeterData(EntityPlayer player) {
+
+		double env = ((int)(HbmLivingProps.getRadBuf(player) * 10D)) / 10D;
+		boolean limit = false;
+		
+		if(env > 3.6D) {
+			env = 3.6D;
+			limit = true;
+		}
+		
+		String envPrefix = getPreffixFromRad(env);
+		
+		player.addChatMessage(new ChatComponentText("===== ☢ ").appendSibling(new ChatComponentTranslation("geiger.title.dosimeter")).appendSibling(new ChatComponentText(" ☢ =====")).setChatStyle(new ChatStyle().setColor(EnumChatFormatting.GOLD)));
+		player.addChatMessage(new ChatComponentTranslation("geiger.envRad").appendSibling(new ChatComponentText(" " + envPrefix + (limit ? ">" : "") + env + " RAD/s")).setChatStyle(new ChatStyle().setColor(EnumChatFormatting.YELLOW)));
+	}
+	
 	public static String getPreffixFromRad(double rads) {
 
 		String chunkPrefix = "";
@@ -245,16 +264,11 @@ public class ContaminationUtil {
 	}
 	
 	public static enum HazardType {
-		MONOXIDE,
 		RADIATION,
-		ASBESTOS,
 		DIGAMMA
 	}
 	
 	public static enum ContaminationType {
-		GAS,				//filterable by gas mask
-		GAS_NON_REACTIVE,	//not filterable by gas mask
-		GOGGLES,			//preventable by goggles
 		FARADAY,			//preventable by metal armor
 		HAZMAT,				//preventable by hazmat
 		HAZMAT2,			//preventable by heavy hazmat
@@ -269,6 +283,7 @@ public class ContaminationUtil {
 	 * This system is nice but the cont types are a bit confusing. Cont types should have much better names and multiple cont types should be applicable.
 	 */
 	@SuppressWarnings("incomplete-switch") //just shut up
+	@Deprecated // instead of this does-everything-but-nothing-well solution, please use the ArmorRegistry to check for protection and the HBM Props for applying contamination
 	public static boolean contaminate(EntityLivingBase entity, HazardType hazard, ContaminationType cont, float amount) {
 		
 		if(hazard == HazardType.RADIATION) {
@@ -281,9 +296,6 @@ public class ContaminationUtil {
 			EntityPlayer player = (EntityPlayer)entity;
 			
 			switch(cont) {
-			case GAS:				if(ArmorUtil.checkForGasMask(player))	return false; break;
-			case GAS_NON_REACTIVE:	if(ArmorUtil.checkForMonoMask(player))	return false; break;
-			case GOGGLES:			if(ArmorUtil.checkForGoggles(player))	return false; break;
 			case FARADAY:			if(ArmorUtil.checkForFaraday(player))	return false; break;
 			case HAZMAT:			if(ArmorUtil.checkForHazmat(player))	return false; break;
 			case HAZMAT2:			if(ArmorUtil.checkForHaz2(player))		return false; break;
@@ -302,9 +314,7 @@ public class ContaminationUtil {
 			return false;
 		
 		switch(hazard) {
-		case MONOXIDE: entity.attackEntityFrom(ModDamageSource.monoxide, amount); break;
 		case RADIATION: HbmLivingProps.incrementRadiation(entity, amount * (cont == ContaminationType.RAD_BYPASS ? 1 : calculateRadiationMod(entity))); break;
-		case ASBESTOS: HbmLivingProps.incrementAsbestos(entity, (int)amount); break;
 		case DIGAMMA: HbmLivingProps.incrementDigamma(entity, amount); break;
 		}
 		

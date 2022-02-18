@@ -23,7 +23,6 @@ import com.hbm.tileentity.machine.TileEntityMachineReactorLarge;
 import com.hbm.tileentity.machine.TileEntityMachineReactorLarge.ReactorFuelType;
 import com.hbm.tileentity.turret.TileEntityTurretCIWS;
 import com.hbm.tileentity.turret.TileEntityTurretCheapo;
-import com.hbm.tileentity.machine.TileEntityMachineReactorSmall;
 import com.hbm.tileentity.machine.TileEntityMachineSeleniumEngine;
 import com.hbm.tileentity.machine.TileEntityRadioRec;
 
@@ -36,7 +35,8 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.client.Minecraft;
 import net.minecraft.tileentity.TileEntity;
 
-@Spaghetti("Changing all machiines to use TileEntityMachineBase will reduce the total chaos in this class")
+@Spaghetti("Changing all machines to use TileEntityMachineBase will reduce the total chaos in this class")
+@Deprecated //use the NBT packet instead
 public class AuxGaugePacket implements IMessage {
 
 	int x;
@@ -134,18 +134,6 @@ public class AuxGaugePacket implements IMessage {
 					
 					selenium.powerCap = m.value;
 				}
-				if (te instanceof TileEntityMachineReactorSmall) {
-					TileEntityMachineReactorSmall reactor = (TileEntityMachineReactorSmall)te;
-					
-					if(m.id == 0)
-						reactor.rods = m.value;
-					if(m.id == 1)
-						reactor.retracting = m.value == 1;
-					if(m.id == 2)
-						reactor.coreHeat = m.value;
-					if(m.id == 3)
-						reactor.hullHeat = m.value;
-				}
 				if (te instanceof TileEntityBomber) {
 					TileEntityBomber bomber = (TileEntityBomber)te;
 					
@@ -163,22 +151,6 @@ public class AuxGaugePacket implements IMessage {
 						radio.isOn = (m.value == 1);
 					if(m.id == 1)
 						radio.freq = ((double)m.value) / 10D;
-				}
-				if (te instanceof TileEntityMachineGasCent) {
-					TileEntityMachineGasCent cent = (TileEntityMachineGasCent)te;
-
-					if(m.id == 0)
-						cent.progress = m.value;
-					if(m.id == 1)
-						cent.isProgressing = m.value == 1;
-				}
-				if (te instanceof TileEntityMachineCentrifuge) {
-					TileEntityMachineCentrifuge cent = (TileEntityMachineCentrifuge)te;
-					
-					if(m.id == 0)
-						cent.dualCookTime = m.value;
-					if(m.id == 1)
-						cent.isProgressing = m.value == 1;
 				}
 				if (te instanceof TileEntityMachineBoiler) {
 					TileEntityMachineBoiler boiler = (TileEntityMachineBoiler)te;
@@ -254,7 +226,6 @@ public class AuxGaugePacket implements IMessage {
 				
 				
 				if(te instanceof TileEntityMachineBase) {
-					
 					((TileEntityMachineBase)te).processGauge(m.value, m.id);
 				}
 				

@@ -6,16 +6,19 @@ import java.util.List;
 
 import com.hbm.blocks.ModBlocks;
 import com.hbm.entity.projectile.EntityRBMKDebris.DebrisType;
-import com.hbm.handler.FluidTypeHandler.FluidType;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidSource;
 import com.hbm.inventory.FluidTank;
 import com.hbm.inventory.RecipesCommon.ComparableStack;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemFluidIcon;
 import com.hbm.lib.Library;
 import com.hbm.tileentity.machine.rbmk.TileEntityRBMKConsole.ColumnType;
 
+import net.minecraft.init.Blocks;
+import net.minecraft.init.Items;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 
@@ -28,7 +31,7 @@ public class TileEntityRBMKOutgasser extends TileEntityRBMKSlottedBase implement
 
 	public TileEntityRBMKOutgasser() {
 		super(2);
-		gas = new FluidTank(FluidType.TRITIUM, 64000, 0);
+		gas = new FluidTank(Fluids.TRITIUM, 64000, 0);
 	}
 
 	@Override
@@ -73,13 +76,16 @@ public class TileEntityRBMKOutgasser extends TileEntityRBMKSlottedBase implement
 	private static HashMap<Object, ItemStack> recipes = new HashMap();
 	
 	static {
-		recipes.put("blockLithium", ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, FluidType.TRITIUM.ordinal()), 10000));
-		recipes.put("ingotLithium", ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, FluidType.TRITIUM.ordinal()), 1000));
-		recipes.put("dustLithium", ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, FluidType.TRITIUM.ordinal()), 1000));
-		recipes.put(new ComparableStack(ModItems.powder_lithium_tiny), ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, FluidType.TRITIUM.ordinal()), 100));
+		recipes.put("blockLithium", ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, Fluids.TRITIUM.getID()), 10000));
+		recipes.put("ingotLithium", ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, Fluids.TRITIUM.getID()), 1000));
+		recipes.put("dustLithium", ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, Fluids.TRITIUM.getID()), 1000));
+		recipes.put(new ComparableStack(ModItems.powder_lithium_tiny), ItemFluidIcon.addQuantity(new ItemStack(ModItems.fluid_icon, 1, Fluids.TRITIUM.getID()), 100));
 		recipes.put("ingotGold", new ItemStack(ModItems.ingot_au198));
 		recipes.put("nuggetGold", new ItemStack(ModItems.nugget_au198));
 		recipes.put("dustGold", new ItemStack(ModItems.powder_au198));
+		recipes.put(new ComparableStack(Blocks.brown_mushroom), new ItemStack(ModBlocks.mush));
+		recipes.put(new ComparableStack(Blocks.red_mushroom), new ItemStack(ModBlocks.mush));
+		recipes.put(new ComparableStack(Items.mushroom_stew), new ItemStack(ModItems.glowing_stew));
 	}
 	
 	private boolean canProcess() {
@@ -175,29 +181,24 @@ public class TileEntityRBMKOutgasser extends TileEntityRBMKSlottedBase implement
 	public boolean getTact() { return worldObj.getTotalWorldTime() % 20 < 10; }
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 
 		if(index == 0)
 			gas.setFill(fill);
 	}
 
 	@Override
-	public void setFluidFill(int fill, FluidType type) {
+	public void setFillForTransfer(int fill, FluidType type) {
 		
 		if(type == gas.getTankType())
 			gas.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 
 		if(index == 0)
 			gas.setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		return new ArrayList() {{ add(gas); }};
 	}
 
 	@Override

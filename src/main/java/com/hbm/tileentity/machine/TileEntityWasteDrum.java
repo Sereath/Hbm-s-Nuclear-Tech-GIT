@@ -1,16 +1,17 @@
 package com.hbm.tileentity.machine;
 
-import com.hbm.items.ModItems;
+import com.hbm.inventory.RecipesCommon.ComparableStack;
+import com.hbm.inventory.recipes.FuelPoolRecipes;
 import com.hbm.items.machine.ItemRBMKRod;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.ISidedInventory;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
 
 public class TileEntityWasteDrum extends TileEntity implements ISidedInventory {
 
@@ -92,20 +93,7 @@ public class TileEntityWasteDrum extends TileEntity implements ISidedInventory {
 
 	@Override
 	public boolean isItemValidForSlot(int i, ItemStack itemStack) {
-		
-		Item item = itemStack.getItem();
-		
-		if(item == ModItems.waste_mox_hot || 
-				item == ModItems.waste_plutonium_hot || 
-				item == ModItems.waste_schrabidium_hot || 
-				item == ModItems.waste_thorium_hot || 
-				item == ModItems.waste_uranium_hot)
-			return true;
-		
-		if(item instanceof ItemRBMKRod)
-			return true;
-		
-		return false;
+		return FuelPoolRecipes.recipes.keySet().contains(new ComparableStack(itemStack)) || itemStack.getItem() instanceof ItemRBMKRod;
 	}
 	
 	@Override
@@ -168,10 +156,9 @@ public class TileEntityWasteDrum extends TileEntity implements ISidedInventory {
 	}
 	
 	@Override
-	public int[] getAccessibleSlotsFromSide(int p_94128_1_)
-    {
-        return slots_arr;
-    }
+	public int[] getAccessibleSlotsFromSide(int p_94128_1_) {
+		return slots_arr;
+	}
 
 	@Override
 	public boolean canInsertItem(int i, ItemStack itemStack, int j) {
@@ -179,22 +166,12 @@ public class TileEntityWasteDrum extends TileEntity implements ISidedInventory {
 	}
 
 	@Override
-	public boolean canExtractItem(int i, ItemStack itemStack, int j) {
-
-		Item item = itemStack.getItem();
-		
-		if(item == ModItems.waste_mox || 
-				item == ModItems.waste_plutonium || 
-				item == ModItems.waste_schrabidium || 
-				item == ModItems.waste_thorium || 
-				item == ModItems.waste_uranium)
-			return true;
-		
-		if(item instanceof ItemRBMKRod) {
+	public boolean canExtractItem(int i, ItemStack itemStack, int j) {	
+		if(itemStack.getItem() instanceof ItemRBMKRod) {
 			return ItemRBMKRod.getCoreHeat(itemStack) < 50 && ItemRBMKRod.getHullHeat(itemStack) < 50;
+		} else {
+			return !FuelPoolRecipes.recipes.containsKey(new ComparableStack(getStackInSlot(i)));
 		}
-		
-		return false;
 	}
 
 	@Override
@@ -204,18 +181,11 @@ public class TileEntityWasteDrum extends TileEntity implements ISidedInventory {
 			
 			int water = 0;
 
-			if(worldObj.getBlock(xCoord + 1, yCoord, zCoord) == Blocks.water || worldObj.getBlock(xCoord + 1, yCoord, zCoord) == Blocks.flowing_water)
-				water++;
-			if(worldObj.getBlock(xCoord - 1, yCoord, zCoord) == Blocks.water || worldObj.getBlock(xCoord - 1, yCoord, zCoord) == Blocks.flowing_water)
-				water++;
-			if(worldObj.getBlock(xCoord, yCoord + 1, zCoord) == Blocks.water || worldObj.getBlock(xCoord, yCoord + 1, zCoord) == Blocks.flowing_water)
-				water++;
-			if(worldObj.getBlock(xCoord, yCoord - 1, zCoord) == Blocks.water || worldObj.getBlock(xCoord, yCoord - 1, zCoord) == Blocks.flowing_water)
-				water++;
-			if(worldObj.getBlock(xCoord, yCoord, zCoord + 1) == Blocks.water || worldObj.getBlock(xCoord, yCoord, zCoord + 1) == Blocks.flowing_water)
-				water++;
-			if(worldObj.getBlock(xCoord, yCoord, zCoord - 1) == Blocks.water || worldObj.getBlock(xCoord, yCoord, zCoord - 1) == Blocks.flowing_water)
-				water++;
+			for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS) {
+				if(worldObj.getBlock(xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ) == Blocks.water || worldObj.getBlock(xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ) == Blocks.flowing_water) {
+					water++;
+				}
+			}
 			
 			if(water > 0) {
 				
@@ -233,16 +203,10 @@ public class TileEntityWasteDrum extends TileEntity implements ISidedInventory {
 							
 						} else if(worldObj.rand.nextInt(r) == 0) {
 
-							if(slots[i].getItem() == ModItems.waste_uranium_hot)
-								slots[i] = new ItemStack(ModItems.waste_uranium);
-							else if(slots[i].getItem() == ModItems.waste_plutonium_hot)
-								slots[i] = new ItemStack(ModItems.waste_plutonium);
-							else if(slots[i].getItem() == ModItems.waste_thorium_hot)
-								slots[i] = new ItemStack(ModItems.waste_thorium);
-							else if(slots[i].getItem() == ModItems.waste_mox_hot)
-								slots[i] = new ItemStack(ModItems.waste_mox);
-							else if(slots[i].getItem() == ModItems.waste_schrabidium_hot)
-								slots[i] = new ItemStack(ModItems.waste_schrabidium);
+							ComparableStack comp = new ComparableStack(getStackInSlot(i));
+							if(FuelPoolRecipes.recipes.containsKey(comp)) {
+								slots[i] = FuelPoolRecipes.recipes.get(comp).copy();
+							}
 						}
 					}
 				}

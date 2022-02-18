@@ -2,6 +2,7 @@ package com.hbm.entity.logic;
 
 import org.apache.logging.log4j.Level;
 
+import com.hbm.blocks.ModBlocks;
 import com.hbm.config.BombConfig;
 import com.hbm.config.GeneralConfig;
 import com.hbm.entity.effect.EntityFalloutRain;
@@ -14,6 +15,7 @@ import com.hbm.interfaces.Spaghetti;
 import com.hbm.main.MainRegistry;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 
@@ -114,6 +116,9 @@ public class EntityNukeExplosionMK3 extends Entity {
         	
         if(!this.did)
         {
+        	for(Object player : this.worldObj.playerEntities)
+    			((EntityPlayer)player).triggerAchievement(MainRegistry.achManhattan);
+        	
     		if(GeneralConfig.enableExtendedLogging && !worldObj.isRemote)
     			MainRegistry.logger.log(Level.INFO, "[NUKE] Initialized mk3 explosion at " + posX + " / " + posY + " / " + posZ + " with strength " + destructionRange + "!");
     		
@@ -187,4 +192,38 @@ public class EntityNukeExplosionMK3 extends Entity {
 
 	@Override
 	protected void entityInit() { }
+	
+	public static EntityNukeExplosionMK3 statFacFleija(World world, double x, double y, double z, int range) {
+		
+		EntityNukeExplosionMK3 entity = new EntityNukeExplosionMK3(world);
+		entity.posX = x;
+		entity.posY = y;
+		entity.posZ = z;
+		entity.destructionRange = range;
+		entity.speed = BombConfig.blastSpeed;
+		entity.coefficient = 1.0F;
+		entity.waste = false;
+		
+		if(range > 50) {
+			
+			for(int i = -1; i <= 1; i++) {
+				for(int j = -1; j <= 1; j++) {
+					for(int k = (int)y + 15; k > 5; k--) {
+						
+						if(world.getBlock((int)x + i * 15, k, (int)z + j * 15) == ModBlocks.stone_porous) {
+							entity.destructionRange = 50;
+							return entity;
+						}
+					}
+				}
+			}
+		}
+		
+		return entity;
+	}
+	
+	public EntityNukeExplosionMK3 makeSol() {
+		this.extType = 1;
+		return this;
+	}
 }

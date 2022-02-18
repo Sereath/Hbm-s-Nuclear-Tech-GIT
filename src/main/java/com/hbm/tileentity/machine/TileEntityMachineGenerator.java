@@ -6,12 +6,11 @@ import java.util.Random;
 
 import com.hbm.blocks.machine.MachineGenerator;
 import com.hbm.explosion.ExplosionNukeGeneric;
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemFuelRod;
 import com.hbm.lib.Library;
@@ -29,7 +28,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 
-public class TileEntityMachineGenerator extends TileEntity implements ISidedInventory, ISource, IFluidContainer, IFluidAcceptor {
+public class TileEntityMachineGenerator extends TileEntity implements ISidedInventory, IFluidContainer, IFluidAcceptor {
 
 	private ItemStack slots[];
 	
@@ -38,8 +37,6 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 	public long power;
 	public final long powerMax = 100000;
 	public boolean isLoaded = false;
-	public int age = 0;
-	public List<IConsumer> list = new ArrayList();
 	public FluidTank[] tanks;
 	
 	private static final int[] slots_top = new int[] {0, 1, 2, 3, 4, 5, 6, 7, 8};
@@ -51,8 +48,8 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 	public TileEntityMachineGenerator() {
 		slots = new ItemStack[14];
 		tanks = new FluidTank[2];
-		tanks[0] = new FluidTank(FluidType.WATER, 32000, 0);
-		tanks[1] = new FluidTank(FluidType.COOLANT, 16000, 1);
+		tanks[0] = new FluidTank(Fluids.WATER, 32000, 0);
+		tanks[1] = new FluidTank(Fluids.COOLANT, 16000, 1);
 	}
 
 	@Override
@@ -135,10 +132,10 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 			if(itemStack.getItem() instanceof ItemFuelRod)
 				return true;
 		if(i == 9)
-			if(itemStack.getItem() == ModItems.rod_water || itemStack.getItem() == ModItems.rod_dual_water || itemStack.getItem() == ModItems.rod_quad_water || itemStack.getItem() == Items.water_bucket)
+			if(itemStack.getItem() == Items.water_bucket)
 				return true;
 		if(i == 10)
-			if(itemStack.getItem() == ModItems.rod_coolant || itemStack.getItem() == ModItems.rod_dual_coolant || itemStack.getItem() == ModItems.rod_quad_coolant)
+			if(itemStack.getItem() == ModItems.fluid_tank_full)
 				return true;
 		if(i == 11)
 			if(itemStack.getItem() instanceof IBatteryItem)
@@ -234,7 +231,7 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 				i == 6 ||
 				i == 7 ||
 				i == 8)
-			if(itemStack.getItem() == ModItems.rod_uranium_fuel_depleted ||
+			/*if(itemStack.getItem() == ModItems.rod_uranium_fuel_depleted ||
 					itemStack.getItem() == ModItems.rod_dual_uranium_fuel_depleted ||
 					itemStack.getItem() == ModItems.rod_quad_uranium_fuel_depleted ||
 					itemStack.getItem() == ModItems.rod_plutonium_fuel_depleted ||
@@ -245,7 +242,7 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 					itemStack.getItem() == ModItems.rod_quad_mox_fuel_depleted ||
 					itemStack.getItem() == ModItems.rod_schrabidium_fuel_depleted ||
 					itemStack.getItem() == ModItems.rod_dual_schrabidium_fuel_depleted ||
-					itemStack.getItem() == ModItems.rod_quad_schrabidium_fuel_depleted)
+					itemStack.getItem() == ModItems.rod_quad_schrabidium_fuel_depleted)*/
 				return true;
 		if(i == 9 || i == 10)
 			if(itemStack.getItem() == Items.bucket || itemStack.getItem() == ModItems.rod_empty || itemStack.getItem() == ModItems.rod_dual_empty || itemStack.getItem() == ModItems.rod_quad_empty)
@@ -275,15 +272,6 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 
 	@Override
 	public void updateEntity() {
-
-		age++;
-		if(age >= 20)
-		{
-			age = 0;
-		}
-		
-		if(age == 9 || age == 19)
-			ffgeuaInit();
 		
 		if(!worldObj.isRemote)
 		{
@@ -296,7 +284,7 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 			//Batteries
 			power = Library.chargeItemsFromTE(slots, 11, power, powerMax);
 			
-			for(int i = 0; i < 9; i++)
+			/*for(int i = 0; i < 9; i++)
 			{
 				if(slots[i] != null && slots[i].getItem() == ModItems.rod_uranium_fuel)
 				{
@@ -442,7 +430,7 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 						this.slots[i] = new ItemStack(ModItems.rod_quad_schrabidium_fuel_depleted);
 					}
 				}
-			}
+			}*/
 			
 			if(this.power > powerMax)
 			{
@@ -532,53 +520,7 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 	}
 
 	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord, this.yCoord + 1, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord - 1, this.zCoord, getTact());
-		ffgeua(this.xCoord - 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord + 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord - 1, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord + 1, getTact());
-	}
-	
-	@Override
-	public boolean getTact() {
-		if(age >= 0 && age < 10)
-		{
-			return true;
-		}
-		
-		return false;
-	}
-
-	@Override
-	public long getSPower() {
-		return power;
-	}
-
-	@Override
-	public void setSPower(long i) {
-		this.power = i;
-	}
-
-	@Override
-	public List<IConsumer> getList() {
-		return list;
-	}
-
-	@Override
-	public void clearList() {
-		this.list.clear();
-	}
-
-	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -588,7 +530,7 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(i);
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -606,23 +548,14 @@ public class TileEntityMachineGenerator extends TileEntity implements ISidedInve
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		
-		return list;
 	}
 }

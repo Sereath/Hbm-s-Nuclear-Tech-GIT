@@ -7,14 +7,13 @@ import java.util.Random;
 import com.hbm.blocks.ModBlocks;
 import com.hbm.config.BombConfig;
 import com.hbm.entity.logic.EntityNukeExplosionMK3;
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
 import com.hbm.interfaces.IFluidSource;
 import com.hbm.interfaces.IReactor;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemCapacitor;
 import com.hbm.items.special.WatzFuel;
@@ -23,6 +22,7 @@ import com.hbm.main.MainRegistry;
 import com.hbm.packet.AuxElectricityPacket;
 import com.hbm.packet.PacketDispatcher;
 
+import api.hbm.energy.IEnergyGenerator;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
@@ -31,9 +31,11 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.world.World;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityWatzCore extends TileEntity implements ISidedInventory, IReactor, ISource, IFluidContainer, IFluidSource {
+public class TileEntityWatzCore extends TileEntity implements ISidedInventory, IReactor, IEnergyGenerator, IFluidContainer, IFluidSource {
 
 	public long power;
 	public final static long maxPower = 100000000;
@@ -51,7 +53,6 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 	
 	private ItemStack slots[];
 	public int age = 0;
-	public List<IConsumer> list = new ArrayList();
 	public List<IFluidAcceptor> list1 = new ArrayList();
 	public FluidTank tank;
 	
@@ -59,7 +60,7 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 
 	public TileEntityWatzCore() {
 		slots = new ItemStack[40];
-		tank = new FluidTank(FluidType.WATZ, 64000, 0);
+		tank = new FluidTank(Fluids.WATZ, 64000, 0);
 	}
 	@Override
 	public int getSizeInventory() {
@@ -550,9 +551,11 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 				if (age >= 20) {
 					age = 0;
 				}
+
+				this.sendPower(worldObj, xCoord, yCoord + 7, zCoord, ForgeDirection.UP);
+				this.sendPower(worldObj, xCoord, yCoord - 7, zCoord, ForgeDirection.DOWN);
 	
 				if (age == 9 || age == 19) {
-					ffgeuaInit();
 					fillFluidInit(tank.getTankType());
 				}
 	
@@ -648,6 +651,13 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 				this.worldObj.playSoundEffect(this.xCoord, this.yCoord, this.zCoord, "game.neutral.swim.splash", 3.0F, 0.5F);
 			}
 			else {
+				List<EntityPlayer> players = worldObj.getEntitiesWithinAABB(EntityPlayer.class,
+						AxisAlignedBB.getBoundingBox(xCoord + 0.5, yCoord + 0.5, zCoord + 0.5, xCoord + 0.5, yCoord + 0.5, zCoord + 0.5).expand(50, 50, 50));
+				
+				for(EntityPlayer player : players) {
+					player.triggerAchievement(MainRegistry.achWatzBoom);
+				}
+				
 				if (rand.nextInt(10) != 0) {
 					for (int i = -3; i <= 3; i++)
 						for (int j = -5; j <= 5; j++)
@@ -659,31 +669,10 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 					this.worldObj.playSoundEffect(this.xCoord, this.yCoord, this.zCoord, "game.neutral.swim.splash", 3.0F, 0.5F);
 					this.worldObj.playSoundEffect(this.xCoord, this.yCoord, this.zCoord, "random.explode", 3.0F, 0.75F);
 				} else {
-					EntityNukeExplosionMK3 entity = new EntityNukeExplosionMK3(worldObj);
-					entity.posX = this.xCoord;
-					entity.posY = this.yCoord;
-					entity.posZ = this.zCoord;
-					entity.destructionRange = BombConfig.fleijaRadius;
-					entity.speed = 25;
-					entity.coefficient = 1.0F;
-					entity.waste = false;
-	    	
-					worldObj.spawnEntityInWorld(entity);
+					worldObj.spawnEntityInWorld(EntityNukeExplosionMK3.statFacFleija(worldObj, xCoord, yCoord, zCoord, BombConfig.fleijaRadius));
 				}
 			}
 		}
-	}
-
-	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord, this.yCoord + 7, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord - 7, this.zCoord, getTact());
 	}
 	
 	@Override
@@ -697,32 +686,27 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 	}
 
 	@Override
-	public long getSPower() {
+	public long getPower() {
 		return power;
 	}
 
 	@Override
-	public void setSPower(long i) {
+	public void setPower(long i) {
 		this.power = i;
 	}
 
 	@Override
-	public List<IConsumer> getList() {
-		return list;
+	public long getMaxPower() {
+		return this.maxPower;
 	}
 
 	@Override
-	public void clearList() {
-		this.list.clear();
-	}
-
-	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		tank.setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		tank.setTankType(type);
 	}
 	
@@ -746,7 +730,7 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 	}
 	
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		tank.setFill(i);
 	}
 	
@@ -758,13 +742,5 @@ public class TileEntityWatzCore extends TileEntity implements ISidedInventory, I
 	@Override
 	public void clearFluidList(FluidType type) {
 		list1.clear();
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tank);
-		
-		return list;
 	}
 }

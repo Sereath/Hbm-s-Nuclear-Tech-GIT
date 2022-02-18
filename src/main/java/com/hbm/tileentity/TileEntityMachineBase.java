@@ -1,7 +1,6 @@
 package com.hbm.tileentity;
 
 import com.hbm.blocks.ModBlocks;
-import com.hbm.interfaces.Spaghetti;
 import com.hbm.packet.AuxGaugePacket;
 import com.hbm.packet.NBTPacket;
 import com.hbm.packet.PacketDispatcher;
@@ -144,7 +143,7 @@ public abstract class TileEntityMachineBase extends TileEntity implements ISided
 	//was it update? onUpdate? updateTile? did it have any args?
 	//shit i don't know man
 	@Override
-    public abstract void updateEntity();
+	public abstract void updateEntity();
 	
 	@Deprecated
 	public void updateGauge(int val, int id, int range) {
@@ -164,6 +163,7 @@ public abstract class TileEntityMachineBase extends TileEntity implements ISided
 	
 	public void networkUnpack(NBTTagCompound nbt) { }
 	
+	@Deprecated
 	public void handleButtonPacket(int value, int meta) { }
 	
 	@Override

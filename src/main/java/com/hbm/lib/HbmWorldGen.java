@@ -7,8 +7,8 @@ import com.hbm.config.GeneralConfig;
 import com.hbm.config.WorldConfig;
 import com.hbm.items.ModItems;
 import com.hbm.main.MainRegistry;
-import com.hbm.tileentity.machine.TileEntitySafe;
-import com.hbm.tileentity.machine.TileEntitySoyuzCapsule;
+import com.hbm.tileentity.machine.storage.TileEntitySafe;
+import com.hbm.tileentity.machine.storage.TileEntitySoyuzCapsule;
 import com.hbm.world.dungeon.AncientTomb;
 import com.hbm.world.dungeon.Antenna;
 import com.hbm.world.dungeon.ArcticVault;
@@ -30,10 +30,12 @@ import com.hbm.world.feature.Geyser;
 import com.hbm.world.feature.GeyserLarge;
 import com.hbm.world.feature.OilBubble;
 import com.hbm.world.feature.OilSandBubble;
+import com.hbm.world.feature.OilSpot;
 import com.hbm.world.feature.Sellafield;
 import com.hbm.world.generator.CellularDungeonFactory;
 import com.hbm.world.generator.DungeonToolbox;
 
+import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntityChest;
@@ -63,6 +65,25 @@ public class HbmWorldGen implements IWorldGenerator {
 	}
 	
 	private void generateSurface(World world, Random rand, int i, int j) {
+		
+		if(WorldConfig.oilcoalSpawn > 0 && rand.nextInt(WorldConfig.oilcoalSpawn) == 0)
+			DungeonToolbox.generateOre(world, rand, i, j, 1, 64, 32, 32, ModBlocks.ore_coal_oil);
+
+		if(WorldConfig.gasbubbleSpawn > 0 && rand.nextInt(WorldConfig.gasbubbleSpawn) == 0)
+			DungeonToolbox.generateOre(world, rand, i, j, 1, 32, 30, 10, ModBlocks.gas_flammable, 1);
+
+		if(WorldConfig.explosivebubbleSpawn > 0 && rand.nextInt(WorldConfig.explosivebubbleSpawn) == 0)
+			DungeonToolbox.generateOre(world, rand, i, j, 1, 32, 30, 10, ModBlocks.gas_explosive, 1);
+
+		if(WorldConfig.alexandriteSpawn > 0 && rand.nextInt(WorldConfig.alexandriteSpawn) == 0)
+			DungeonToolbox.generateOre(world, rand, i, j, 1, 3, 10, 5, ModBlocks.ore_alexandrite);
+
+		DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.6D, ModBlocks.cluster_depth_iron, rand, 24);
+		DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.6D, ModBlocks.cluster_depth_titanium, rand, 32);
+		DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.6D, ModBlocks.cluster_depth_tungsten, rand, 32);
+		DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.8D, ModBlocks.ore_depth_cinnebar, rand, 16);
+		DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.8D, ModBlocks.ore_depth_zirconium, rand, 16);
+		DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.8D, ModBlocks.ore_depth_borax, rand, 16);
 
 		if(WorldConfig.overworldOre) {
 			DungeonToolbox.generateOre(world, rand, i, j, 25, 6, 30, 10, ModBlocks.ore_gneiss_iron, ModBlocks.stone_gneiss);
@@ -91,38 +112,48 @@ public class HbmWorldGen implements IWorldGenerator {
 			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.cinnebarSpawn, 4, 8, 16, ModBlocks.ore_cinnebar);
 			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.cobaltSpawn, 4, 4, 8, ModBlocks.ore_cobalt);
 	
-			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.ironClusterSpawn, 6, 5, 50, ModBlocks.cluster_iron);
-			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.titaniumClusterSpawn, 6, 5, 30, ModBlocks.cluster_titanium);
-			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.aluminiumClusterSpawn, 6, 5, 40, ModBlocks.cluster_aluminium);
+			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.ironClusterSpawn, 6, 15, 45, ModBlocks.cluster_iron);
+			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.titaniumClusterSpawn, 6, 15, 30, ModBlocks.cluster_titanium);
+			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.aluminiumClusterSpawn, 6, 15, 35, ModBlocks.cluster_aluminium);
+			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.copperClusterSpawn, 6, 15, 20, ModBlocks.cluster_copper);
 			
-			if(WorldConfig.oilcoalSpawn > 0 && rand.nextInt(WorldConfig.oilcoalSpawn) == 0)
-				DungeonToolbox.generateOre(world, rand, i, j, 1, 64, 32, 32, ModBlocks.ore_coal_oil);
-
-			if(WorldConfig.gasbubbleSpawn > 0 && rand.nextInt(WorldConfig.gasbubbleSpawn) == 0)
-				DungeonToolbox.generateOre(world, rand, i, j, 1, 32, 30, 10, ModBlocks.gas_flammable);
-
-			DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.6D, ModBlocks.cluster_depth_iron, rand, 24);
-			DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.6D, ModBlocks.cluster_depth_titanium, rand, 32);
-			DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.6D, ModBlocks.cluster_depth_tungsten, rand, 32);
-			DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.8D, ModBlocks.ore_depth_cinnebar, rand, 16);
-			DepthDeposit.generateConditionOverworld(world, i, 0, 3, j, 5, 0.8D, ModBlocks.ore_depth_zirconium, rand, 16);
+			if(GeneralConfig.enable528ColtanSpawn) {
+				DungeonToolbox.generateOre(world, rand, i, j, GeneralConfig.coltanRate, 4, 15, 40, ModBlocks.ore_coltan);
+			}
 
 			Random colRand = new Random(world.getSeed() + 5);
 			int colX = (int) (colRand.nextGaussian() * 1500);
 			int colZ = (int) (colRand.nextGaussian() * 1500);
-			int colRange = 500;
+			int colRange = 750;
 			
-			for (int k = 0; k < 2; k++) {
+			if((GeneralConfig.enable528BedrockSpawn || GeneralConfig.enable528BedrockDeposit) && rand.nextInt(GeneralConfig.bedrockRate) != 0) {
+				int x = i + rand.nextInt(16);
+				int z = j + rand.nextInt(16);
 				
-				for(int r = 1; r <= 5; r++) {
-					int randPosX = i + rand.nextInt(16);
-					int randPosY = rand.nextInt(25) + 15;
-					int randPosZ = j + rand.nextInt(16);
+				if(GeneralConfig.enable528BedrockSpawn || (GeneralConfig.enable528BedrockDeposit && x <= colX + colRange && x >= colX - colRange && z <= colZ + colRange && z >= colZ - colRange)) {
 					
-					int range = colRange / r;
-		
-					if(randPosX <= colX + range && randPosX >= colX - range && randPosZ <= colZ + range && randPosZ >= colZ - range)
-						(new WorldGenMinable(ModBlocks.ore_coltan, 4)).generate(world, rand, randPosX, randPosY, randPosZ);
+					for(int y = 6; y >= 0; y--) {
+						if(world.getBlock(x, y, z).isReplaceableOreGen(world, x, y, z, Blocks.bedrock)) {
+							world.setBlock(x, y, z, ModBlocks.ore_bedrock_coltan);
+						}
+					}
+				}
+			}
+			
+			if(GeneralConfig.enable528ColtanDeposit) {
+				for (int k = 0; k < 2; k++) {
+					
+					for(int r = 1; r <= 5; r++) {
+						int randPosX = i + rand.nextInt(16);
+						int randPosY = rand.nextInt(25) + 15;
+						int randPosZ = j + rand.nextInt(16);
+						
+						int range = colRange / r;
+			
+						if(randPosX <= colX + range && randPosX >= colX - range && randPosZ <= colZ + range && randPosZ >= colZ - range) {
+							(new WorldGenMinable(ModBlocks.ore_coltan, 4)).generate(world, rand, randPosX, randPosY, randPosZ);
+						}
+					}
 				}
 			}
 	
@@ -507,12 +538,34 @@ public class HbmWorldGen implements IWorldGenerator {
 			}
 		}
 
-		if (rand.nextInt(25) == 0) {
+		if(rand.nextInt(25) == 0) {
 			int randPosX = i + rand.nextInt(16);
 			int randPosY = rand.nextInt(25);
 			int randPosZ = j + rand.nextInt(16);
 
 			OilBubble.spawnOil(world, randPosX, randPosY, randPosZ, 7 + rand.nextInt(9));
+		}
+
+		if(rand.nextInt(50) == 0) {
+			int randPosX = i + rand.nextInt(16);
+			int randPosZ = j + rand.nextInt(16);
+			
+			for(int x = -4; x <= 4; x++) {
+				for(int y = 0; y <= 4; y++) {
+					for(int z = -4; z <= 4; z++) {
+						
+						if(Math.abs(x) + Math.abs(y) + Math.abs(z) <= 6) {
+							Block b = world.getBlock(randPosX + x, y, randPosZ + z);
+							if(b.isReplaceableOreGen(world, randPosX + x, y, randPosZ + z, Blocks.stone) || b.isReplaceableOreGen(world, randPosX + x, y, randPosZ + z, Blocks.bedrock)) {
+								world.setBlock(randPosX + x, y, randPosZ + z, ModBlocks.ore_bedrock_oil);
+							}
+						}
+					}
+				}
+			}
+			
+			DungeonToolbox.generateOre(world, rand, i, j, 16, 8, 10, 50, ModBlocks.stone_porous);
+			OilSpot.generateOilSpot(world, randPosX, randPosZ, 5, 50);
 		}
 
 		if (GeneralConfig.enableNITAN) {
@@ -605,10 +658,10 @@ public class HbmWorldGen implements IWorldGenerator {
 			
 			if(GeneralConfig.enablePlutoniumOre)
 				DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.netherPlutoniumSpawn, 4, 0, 127, ModBlocks.ore_nether_plutonium, Blocks.netherrack);
-
-			DepthDeposit.generateConditionNether(world, i, 0, 3, j, 7, 0.6D, ModBlocks.ore_depth_nether_neodymium, rand, 16);
-			DepthDeposit.generateConditionNether(world, i, 125, 3, j, 7, 0.6D, ModBlocks.ore_depth_nether_neodymium, rand, 16);
 		}
+
+		DepthDeposit.generateConditionNether(world, i, 0, 3, j, 7, 0.6D, ModBlocks.ore_depth_nether_neodymium, rand, 16);
+		DepthDeposit.generateConditionNether(world, i, 125, 3, j, 7, 0.6D, ModBlocks.ore_depth_nether_neodymium, rand, 16);
 
 		for(int k = 0; k < 30; k++){
 			int x = i + rand.nextInt(16);
@@ -633,7 +686,7 @@ public class HbmWorldGen implements IWorldGenerator {
 
 	private void generateEnd(World world, Random rand, int i, int j) {
 		
-		if(!WorldConfig.endOre) {
+		if(WorldConfig.endOre) {
 			DungeonToolbox.generateOre(world, rand, i, j, WorldConfig.endTikiteSpawn, 6, 0, 127, ModBlocks.ore_tikite, Blocks.end_stone);
 	
 			/*for(int k = 0; k < 50; k++){

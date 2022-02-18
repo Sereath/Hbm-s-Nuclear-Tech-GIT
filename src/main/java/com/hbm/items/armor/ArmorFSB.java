@@ -35,7 +35,6 @@ import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.Vec3;
 import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
@@ -52,6 +51,7 @@ public class ArmorFSB extends ItemArmor {
 	public float damageCap = -1;
 	public float damageMod = -1;
 	public float damageThreshold = 0;
+	public float protectionYield = 100F;
 	public boolean fireproof = false;
 	public boolean noHelmet = false;
 	public boolean vats = false;
@@ -91,6 +91,11 @@ public class ArmorFSB extends ItemArmor {
 
 	public ArmorFSB setThreshold(float threshold) {
 		this.damageThreshold = threshold;
+		return this;
+	}
+
+	public ArmorFSB setProtectionLevel(float damageYield) {
+		this.protectionYield = damageYield;
 		return this;
 	}
 
@@ -172,6 +177,7 @@ public class ArmorFSB extends ItemArmor {
 		this.damageCap = original.damageCap;
 		this.damageMod = original.damageMod;
 		this.damageThreshold = original.damageThreshold;
+		this.protectionYield = original.protectionYield;
 		this.blastProtection = original.blastProtection;
 		this.projectileProtection = original.projectileProtection;
 		this.fireproof = original.fireproof;
@@ -218,12 +224,10 @@ public class ArmorFSB extends ItemArmor {
 		}
 
 		if(blastProtection != -1) {
-
 			list.add(EnumChatFormatting.YELLOW + "  " + I18nUtil.resolveKey("armor.blastProtection", blastProtection));
 		}
 
 		if(projectileProtection != -1) {
-
 			list.add(EnumChatFormatting.YELLOW + "  " + I18nUtil.resolveKey("armor.projectileProtection", projectileProtection));
 		}
 
@@ -265,6 +269,10 @@ public class ArmorFSB extends ItemArmor {
 
 		if(gravity != 0) {
 			list.add(EnumChatFormatting.BLUE + "  " + I18nUtil.resolveKey("armor.gravity", gravity));
+		}
+
+		if(protectionYield != 100F) {
+			list.add(EnumChatFormatting.BLUE + "  Protection applies to damage <" + protectionYield);
 		}
 	}
 
@@ -362,32 +370,37 @@ public class ArmorFSB extends ItemArmor {
 			if(ArmorFSB.hasFSBArmor(player)) {
 
 				ArmorFSB chestplate = (ArmorFSB) player.inventory.armorInventory[2].getItem();
+				
+				//store any damage above the yield
+				float overFlow = Math.max(0, event.ammount - chestplate.protectionYield);
+				//reduce the damage to the yield cap if it exceeds the yield
+				event.ammount = Math.min(event.ammount, chestplate.protectionYield);
 
-				if(event.ammount < 100) {
+				if(!event.source.isUnblockable())
+					event.ammount -= chestplate.damageThreshold;
 
-					if(!event.source.isUnblockable())
-						event.ammount -= chestplate.damageThreshold;
-
-					if(chestplate.damageMod != -1) {
-						event.ammount *= chestplate.damageMod;
-					}
-
-					if(chestplate.resistance.get(event.source.getDamageType()) != null) {
-						event.ammount *= chestplate.resistance.get(event.source.getDamageType());
-					}
-
-					if(chestplate.blastProtection != -1 && event.source.isExplosion()) {
-						event.ammount *= chestplate.blastProtection;
-					}
-
-					if(chestplate.projectileProtection != -1 && event.source.isProjectile()) {
-						event.ammount *= chestplate.projectileProtection;
-					}
-
-					if(chestplate.damageCap != -1) {
-						event.ammount = Math.min(event.ammount, chestplate.damageCap);
-					}
+				if(chestplate.damageMod != -1) {
+					event.ammount *= chestplate.damageMod;
 				}
+
+				if(chestplate.resistance.get(event.source.getDamageType()) != null) {
+					event.ammount *= chestplate.resistance.get(event.source.getDamageType());
+				}
+
+				if(chestplate.blastProtection != -1 && event.source.isExplosion()) {
+					event.ammount *= chestplate.blastProtection;
+				}
+
+				if(chestplate.projectileProtection != -1 && event.source.isProjectile()) {
+					event.ammount *= chestplate.projectileProtection;
+				}
+
+				if(chestplate.damageCap != -1) {
+					event.ammount = Math.min(event.ammount, chestplate.damageCap);
+				}
+				
+				//add back anything that was above the protection yield before
+				event.ammount += overFlow;
 			}
 		}
 	}

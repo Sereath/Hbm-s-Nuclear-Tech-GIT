@@ -1,6 +1,5 @@
 package com.hbm.tileentity.machine;
 
-import com.hbm.interfaces.IConsumer;
 import com.hbm.items.ModItems;
 import com.hbm.lib.Library;
 
@@ -12,7 +11,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 
-public class TileEntityMachineDeuterium extends TileEntity implements ISidedInventory, IConsumer {
+public class TileEntityMachineDeuterium extends TileEntity implements ISidedInventory {
 
 	private ItemStack slots[];
 	
@@ -104,7 +103,7 @@ public class TileEntityMachineDeuterium extends TileEntity implements ISidedInve
 		switch(i)
 		{
 		case 1:
-			if(stack.getItem() == ModItems.rod_water || stack.getItem() == ModItems.rod_dual_water || stack.getItem() == ModItems.rod_quad_water || stack.getItem() == Items.water_bucket)
+			if(stack.getItem() == Items.water_bucket)
 				return true;
 			break;
 		case 2:
@@ -284,30 +283,6 @@ public class TileEntityMachineDeuterium extends TileEntity implements ISidedInve
 				}
 			}
 
-			if (slots[1] != null && slots[1].getItem() == ModItems.rod_water && water + 250 <= maxFill) {
-				water += 250;
-				slots[1].stackSize--;
-				if (slots[1].stackSize == 0) {
-					this.slots[1] = this.slots[1].getItem().getContainerItem(this.slots[1]);
-				}
-			}
-
-			if (slots[1] != null && slots[1].getItem() == ModItems.rod_dual_water && water + 500 <= maxFill) {
-				water += 500;
-				slots[1].stackSize--;
-				if (slots[1].stackSize == 0) {
-					this.slots[1] = this.slots[1].getItem().getContainerItem(this.slots[1]);
-				}
-			}
-
-			if (slots[1] != null && slots[1].getItem() == ModItems.rod_quad_water && water + 1000 <= maxFill) {
-				water += 1000;
-				slots[1].stackSize--;
-				if (slots[1].stackSize == 0) {
-					this.slots[1] = this.slots[1].getItem().getContainerItem(this.slots[1]);
-				}
-			}
-
 			if (slots[1] != null && slots[1].getItem() == ModItems.inf_water) {
 				water = maxFill;
 			}
@@ -320,22 +295,5 @@ public class TileEntityMachineDeuterium extends TileEntity implements ISidedInve
 				process = 0;
 			}
 		}
-	}
-
-	@Override
-	public void setPower(long i) {
-		power = i;
-		
-	}
-
-	@Override
-	public long getPower() {
-		return power;
-		
-	}
-
-	@Override
-	public long getMaxPower() {
-		return maxPower;
 	}
 }

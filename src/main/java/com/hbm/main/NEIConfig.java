@@ -1,6 +1,7 @@
 package com.hbm.main;
 
 import com.hbm.blocks.ModBlocks;
+import com.hbm.config.VersatileConfig;
 import com.hbm.handler.nei.*;
 import com.hbm.items.ModItems;
 import com.hbm.items.machine.ItemBattery;
@@ -20,8 +21,8 @@ public class NEIConfig implements IConfigureNEI {
 		API.registerUsageHandler(new CentrifugeRecipeHandler());
 		API.registerRecipeHandler(new GasCentrifugeRecipeHandler());
 		API.registerUsageHandler(new GasCentrifugeRecipeHandler());
-		API.registerRecipeHandler(new ReactorRecipeHandler());
-		API.registerUsageHandler(new ReactorRecipeHandler());
+		API.registerRecipeHandler(new BreederRecipeHandler());
+		API.registerUsageHandler(new BreederRecipeHandler());
 		API.registerRecipeHandler(new ShredderRecipeHandler());
 		API.registerUsageHandler(new ShredderRecipeHandler());
 		API.registerRecipeHandler(new CMBFurnaceRecipeHandler());
@@ -54,6 +55,22 @@ public class NEIConfig implements IConfigureNEI {
 		API.registerUsageHandler(new SmithingRecipeHandler());
 		API.registerRecipeHandler(new AnvilRecipeHandler());
 		API.registerUsageHandler(new AnvilRecipeHandler());
+		API.registerRecipeHandler(new FuelPoolHandler());
+		API.registerUsageHandler(new FuelPoolHandler());
+		API.registerRecipeHandler(new RadiolysisRecipeHandler());
+		API.registerUsageHandler(new RadiolysisRecipeHandler());
+		
+		//universal boyes
+		API.registerRecipeHandler(new ZirnoxRecipeHandler());
+		API.registerUsageHandler(new ZirnoxRecipeHandler());
+		if(VersatileConfig.rtgDecay()) {
+			API.registerRecipeHandler(new RTGRecipeHandler());
+			API.registerUsageHandler(new RTGRecipeHandler());
+		}
+		API.registerRecipeHandler(new LiquefactionHandler());
+		API.registerUsageHandler(new LiquefactionHandler());
+		API.registerRecipeHandler(new SolidificationHandler());
+		API.registerUsageHandler(new SolidificationHandler());
 
 		//Some things are even beyond my control...or are they?
 		API.hideItem(ItemBattery.getEmptyBattery(ModItems.memory));
@@ -80,42 +97,32 @@ public class NEIConfig implements IConfigureNEI {
 			API.hideItem(new ItemStack(ModItems.ams_core_thingy));
 		}
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_assembler));
-		API.hideItem(new ItemStack(ModBlocks.dummy_block_centrifuge));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_chemplant));
-		API.hideItem(new ItemStack(ModBlocks.dummy_block_cyclotron));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_drill));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_flare));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_fluidtank));
-		API.hideItem(new ItemStack(ModBlocks.dummy_block_igenerator));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_pumpjack));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_refinery));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_turbofan));
-		API.hideItem(new ItemStack(ModBlocks.dummy_block_well));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_ams_base));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_ams_emitter));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_ams_limiter));
-		API.hideItem(new ItemStack(ModBlocks.dummy_block_reactor_small));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_radgen));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_vault));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_blast));
-		API.hideItem(new ItemStack(ModBlocks.dummy_block_gascent));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_uf6));
 		API.hideItem(new ItemStack(ModBlocks.dummy_block_puf6));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_assembler));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_chemplant));
-		API.hideItem(new ItemStack(ModBlocks.dummy_port_cyclotron));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_drill));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_flare));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_fluidtank));
-		API.hideItem(new ItemStack(ModBlocks.dummy_port_igenerator));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_pumpjack));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_refinery));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_turbofan));
-		API.hideItem(new ItemStack(ModBlocks.dummy_port_well));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_ams_base));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_ams_emitter));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_ams_limiter));
-		API.hideItem(new ItemStack(ModBlocks.dummy_port_reactor_small));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_radgen));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_compact_launcher));
 		API.hideItem(new ItemStack(ModBlocks.dummy_port_launch_table));

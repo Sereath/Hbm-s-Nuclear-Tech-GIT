@@ -3,8 +3,19 @@ package com.hbm.handler.radiation;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import com.hbm.blocks.ModBlocks;
+import com.hbm.config.RadiationConfig;
+import com.hbm.packet.AuxParticlePacket;
+import com.hbm.packet.PacketDispatcher;
+
+import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
+import net.minecraft.block.material.Material;
+import net.minecraft.init.Blocks;
+import net.minecraft.util.MathHelper;
 import net.minecraft.world.ChunkCoordIntPair;
 import net.minecraft.world.World;
+import net.minecraft.world.WorldServer;
+import net.minecraft.world.gen.ChunkProviderServer;
 import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.ChunkEvent;
 import net.minecraftforge.event.world.WorldEvent;
@@ -16,6 +27,7 @@ import net.minecraftforge.event.world.WorldEvent;
 public class ChunkRadiationHandlerSimple extends ChunkRadiationHandler {
 	
 	private HashMap<World, SimpleRadiationPerWorld> perWorld = new HashMap();
+	private static final float maxRad = 100_000F;
 
 	@Override
 	public float getRadiation(World world, int x, int y, int z) {
@@ -24,7 +36,7 @@ public class ChunkRadiationHandlerSimple extends ChunkRadiationHandler {
 		if(radWorld != null) {
 			ChunkCoordIntPair coords = new ChunkCoordIntPair(x >> 4, z >> 4);
 			Float rad = radWorld.radiation.get(coords);
-			return rad == null ? 0F : rad;
+			return rad == null ? 0F : MathHelper.clamp_float(rad, 0, maxRad);
 		}
 		
 		return 0;
@@ -39,7 +51,7 @@ public class ChunkRadiationHandlerSimple extends ChunkRadiationHandler {
 			if(world.blockExists(x, 0, z)) {
 				
 				ChunkCoordIntPair coords = new ChunkCoordIntPair(x >> 4, z >> 4);
-				radWorld.radiation.put(coords, rad);
+				radWorld.radiation.put(coords, MathHelper.clamp_float(rad, 0, maxRad));
 				world.getChunkFromBlockCoords(x, z).isModified = true;
 			}
 		}
@@ -63,6 +75,7 @@ public class ChunkRadiationHandlerSimple extends ChunkRadiationHandler {
 			HashMap<ChunkCoordIntPair, Float> radiation = entry.getValue().radiation;
 			HashMap<ChunkCoordIntPair, Float> buff = new HashMap(radiation);
 			radiation.clear();
+			World world = entry.getKey();
 			
 			for(Entry<ChunkCoordIntPair, Float> chunk : buff.entrySet()) {
 				
@@ -82,10 +95,20 @@ public class ChunkRadiationHandlerSimple extends ChunkRadiationHandler {
 							Float val = radiation.get(newCoord);
 							float rad = val == null ? 0 : val;
 							float newRad = rad + chunk.getValue() * percent;
-							newRad = Math.max(0F, newRad * 0.99F - 0.05F);
+							newRad = MathHelper.clamp_float(0F, newRad * 0.99F - 0.05F, maxRad);
 							radiation.put(newCoord, newRad);
 						} else {
 							radiation.put(newCoord, chunk.getValue() * percent);
+						}
+						
+						float rad = radiation.get(newCoord);
+						if(rad > RadiationConfig.fogRad && world != null && world.rand.nextInt(RadiationConfig.fogCh) == 0 && world.getChunkFromChunkCoords(coord.chunkXPos, coord.chunkZPos).isChunkLoaded) {
+							
+							int x = coord.chunkXPos * 16 + world.rand.nextInt(16);
+							int z = coord.chunkZPos * 16 + world.rand.nextInt(16);
+							int y = world.getHeightValue(x, z) + world.rand.nextInt(5);
+							
+							PacketDispatcher.wrapper.sendToAllAround(new AuxParticlePacket(x, y, z, 3), new TargetPoint(world.provider.dimensionId, x, y, z, 100));
 						}
 					}
 				}
@@ -148,5 +171,72 @@ public class ChunkRadiationHandlerSimple extends ChunkRadiationHandler {
 	public static class SimpleRadiationPerWorld {
 		
 		public HashMap<ChunkCoordIntPair, Float> radiation = new HashMap();
+	}
+	
+	@Override
+	public void handleWorldDestruction() {
+		
+		int count = 10;
+		int threshold = 10;
+		int chunks = 5;
+		
+		//for all worlds
+		for(Entry<World, SimpleRadiationPerWorld> per : perWorld.entrySet()) {
+			
+			World world = per.getKey();
+			SimpleRadiationPerWorld list = per.getValue();
+			
+			Object[] entries = list.radiation.entrySet().toArray();
+			
+			if(entries.length == 0)
+				continue;
+			
+			//chose this many random chunks
+			for(int c = 0; c < chunks; c++) {
+				
+				Entry<ChunkCoordIntPair, Float> randEnt = (Entry<ChunkCoordIntPair, Float>) entries[world.rand.nextInt(entries.length)];
+				
+				ChunkCoordIntPair coords = randEnt.getKey();
+				WorldServer serv = (WorldServer) world;
+				ChunkProviderServer provider = (ChunkProviderServer) serv.getChunkProvider();
+				
+				//choose this many random locations within the chunk
+				for(int i = 0; i < count; i++) {
+					
+					if(randEnt == null || randEnt.getValue() < threshold)
+						continue;
+					
+					if(provider.chunkExists(coords.chunkXPos, coords.chunkZPos)) {
+						
+						for(int a = 0; a < 16; a++) {
+							for(int b = 0; b < 16; b++) {
+								
+								if(world.rand.nextInt(3) != 0)
+									continue;
+								
+								int x = coords.getCenterXPos() - 8 + a;
+								int z = coords.getCenterZPosition() - 8 + b;
+								int y = world.getHeightValue(x, z) - world.rand.nextInt(2);
+								
+								if(world.getBlock(x, y, z) == Blocks.grass) {
+									world.setBlock(x, y, z, ModBlocks.waste_earth);
+									
+								} else if(world.getBlock(x, y, z) == Blocks.tallgrass) {
+									world.setBlock(x, y, z, Blocks.air);
+									
+								} else if(world.getBlock(x, y, z).getMaterial() == Material.leaves && !(world.getBlock(x, y, z) == ModBlocks.waste_leaves)) {
+									
+									if(world.rand.nextInt(7) <= 5) {
+										world.setBlock(x, y, z, ModBlocks.waste_leaves);
+									} else {
+										world.setBlock(x, y, z, Blocks.air);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }

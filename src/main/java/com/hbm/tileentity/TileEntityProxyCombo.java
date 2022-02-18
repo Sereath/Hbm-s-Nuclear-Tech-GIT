@@ -2,18 +2,20 @@ package com.hbm.tileentity;
 
 import java.util.List;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.inventory.FluidTank;
+import com.hbm.inventory.fluid.FluidType;
 
+import api.hbm.energy.IEnergyConnector;
+import api.hbm.energy.IEnergyUser;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityProxyCombo extends TileEntityProxyBase implements IConsumer, IFluidAcceptor, ISidedInventory {
+public class TileEntityProxyCombo extends TileEntityProxyBase implements IEnergyUser, IFluidAcceptor, ISidedInventory {
 	
 	TileEntity tile;
 	boolean inventory;
@@ -39,49 +41,36 @@ public class TileEntityProxyCombo extends TileEntityProxyBase implements IConsum
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		
 		if(!fluid)
 			return;
 		
 		if(getTile() instanceof IFluidAcceptor) {
-			((IFluidAcceptor)getTile()).setFillstate(fill, index);
+			((IFluidAcceptor)getTile()).setFillForSync(fill, index);
 		}
 	}
 
 	@Override
-	public void setFluidFill(int fill, FluidType type) {
+	public void setFillForTransfer(int fill, FluidType type) {
 		
 		if(!fluid)
 			return;
 		
 		if(getTile() instanceof IFluidAcceptor) {
-			((IFluidAcceptor)getTile()).setFluidFill(fill, type);
+			((IFluidAcceptor)getTile()).setFillForTransfer(fill, type);
 		}
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		
 		if(!fluid)
 			return;
 		
 		if(getTile() instanceof IFluidAcceptor) {
-			((IFluidAcceptor)getTile()).setType(type, index);
+			((IFluidAcceptor)getTile()).setTypeForSync(type, index);
 		}
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		
-		if(!fluid)
-			return null;
-		
-		if(getTile() instanceof IFluidAcceptor) {
-			return ((IFluidAcceptor)getTile()).getTanks();
-		}
-		
-		return null;
 	}
 
 	@Override
@@ -98,13 +87,13 @@ public class TileEntityProxyCombo extends TileEntityProxyBase implements IConsum
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		
 		if(!fluid)
 			return 0;
 		
 		if(getTile() instanceof IFluidAcceptor) {
-			return ((IFluidAcceptor)getTile()).getMaxFluidFill(type);
+			return ((IFluidAcceptor)getTile()).getMaxFillForReceive(type);
 		}
 		
 		return 0;
@@ -116,8 +105,8 @@ public class TileEntityProxyCombo extends TileEntityProxyBase implements IConsum
 		if(!power)
 			return;
 		
-		if(getTile() instanceof IConsumer) {
-			((IConsumer)getTile()).setPower(i);
+		if(getTile() instanceof IEnergyUser) {
+			((IEnergyUser)getTile()).setPower(i);
 		}
 	}
 
@@ -127,8 +116,8 @@ public class TileEntityProxyCombo extends TileEntityProxyBase implements IConsum
 		if(!power)
 			return 0;
 		
-		if(getTile() instanceof IConsumer) {
-			return ((IConsumer)getTile()).getPower();
+		if(getTile() instanceof IEnergyConnector) {
+			return ((IEnergyConnector)getTile()).getPower();
 		}
 		
 		return 0;
@@ -140,11 +129,37 @@ public class TileEntityProxyCombo extends TileEntityProxyBase implements IConsum
 		if(!power)
 			return 0;
 		
-		if(getTile() instanceof IConsumer) {
-			return ((IConsumer)getTile()).getMaxPower();
+		if(getTile() instanceof IEnergyConnector) {
+			return ((IEnergyConnector)getTile()).getMaxPower();
 		}
 		
 		return 0;
+	}
+
+	@Override
+	public long transferPower(long power) {
+		
+		if(!this.power)
+			return 0;
+		
+		if(getTile() instanceof IEnergyConnector) {
+			return ((IEnergyConnector)getTile()).transferPower(power);
+		}
+		
+		return 0;
+	}
+
+	@Override
+	public boolean canConnect(ForgeDirection dir) {
+		
+		if(!power)
+			return false;
+		
+		if(getTile() instanceof IEnergyConnector) {
+			return ((IEnergyConnector)getTile()).canConnect(dir);
+		}
+		
+		return false;
 	}
 
 	@Override
@@ -350,5 +365,4 @@ public class TileEntityProxyCombo extends TileEntityProxyBase implements IConsum
 		nbt.setBoolean("power", power);
 		nbt.setBoolean("fluid", fluid);
 	}
-
 }

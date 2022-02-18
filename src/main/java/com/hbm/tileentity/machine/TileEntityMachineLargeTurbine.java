@@ -4,17 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.hbm.blocks.BlockDummyable;
-import com.hbm.handler.FluidTypeHandler.FluidType;
-import com.hbm.interfaces.IConsumer;
 import com.hbm.interfaces.IFluidAcceptor;
 import com.hbm.interfaces.IFluidContainer;
 import com.hbm.interfaces.IFluidSource;
-import com.hbm.interfaces.ISource;
 import com.hbm.inventory.FluidTank;
-import com.hbm.inventory.MachineRecipes;
+import com.hbm.inventory.fluid.FluidType;
+import com.hbm.inventory.fluid.Fluids;
+import com.hbm.inventory.recipes.MachineRecipes;
 import com.hbm.lib.Library;
 import com.hbm.tileentity.TileEntityMachineBase;
 
+import api.hbm.energy.IEnergyGenerator;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import net.minecraft.nbt.NBTTagCompound;
@@ -22,12 +22,11 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityMachineLargeTurbine extends TileEntityMachineBase implements IFluidContainer, IFluidAcceptor, IFluidSource, ISource {
+public class TileEntityMachineLargeTurbine extends TileEntityMachineBase implements IFluidContainer, IFluidAcceptor, IFluidSource, IEnergyGenerator {
 
 	public long power;
 	public static final long maxPower = 100000000;
 	public int age = 0;
-	public List<IConsumer> list1 = new ArrayList();
 	public List<IFluidAcceptor> list2 = new ArrayList();
 	public FluidTank[] tanks;
 	
@@ -39,8 +38,8 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 		super(7);
 		
 		tanks = new FluidTank[2];
-		tanks[0] = new FluidTank(FluidType.STEAM, 512000, 0);
-		tanks[1] = new FluidTank(FluidType.WATER, 10240000, 1);
+		tanks[0] = new FluidTank(Fluids.STEAM, 512000, 0);
+		tanks[1] = new FluidTank(Fluids.SPENTSTEAM, 10240000, 1);
 	}
 
 	@Override
@@ -60,7 +59,9 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 			}
 			
 			fillFluidInit(tanks[1].getTankType());
-			ffgeuaInit();
+			
+			ForgeDirection dir = ForgeDirection.getOrientation(this.getBlockMetadata() - BlockDummyable.offset);
+			this.sendPower(worldObj, xCoord + dir.offsetX * -4, yCoord, zCoord + dir.offsetZ * -4, dir.getOpposite());
 
 			tanks[0].setType(0, 1, slots);
 			tanks[0].loadTank(2, 3, slots);
@@ -71,11 +72,11 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 			Object[] outs = MachineRecipes.getTurbineOutput(tanks[0].getTankType());
 			
 			if(outs == null) {
-				tanks[1].setTankType(FluidType.NONE);
+				tanks[1].setTankType(Fluids.NONE);
 			} else {
 				tanks[1].setTankType((FluidType) outs[0]);
 				
-				int processMax = (int) Math.ceil(Math.ceil(tanks[0].getFill() / 10F) / (Integer)outs[2]);		//the maximum amount of cycles based on the 10% cap
+				int processMax = (int) Math.ceil(Math.ceil(tanks[0].getFill() / 5F) / (Integer)outs[2]);		//the maximum amount of cycles based on the 20% cap
 				int processSteam = tanks[0].getFill() / (Integer)outs[2];										//the maximum amount of cycles depending on steam
 				int processWater = (tanks[1].getMaxFill() - tanks[1].getFill()) / (Integer)outs[1];				//the maximum amount of cycles depending on water
 				
@@ -84,7 +85,7 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 				tanks[0].setFill(tanks[0].getFill() - (Integer)outs[2] * cycles);
 				tanks[1].setFill(tanks[1].getFill() + (Integer)outs[1] * cycles);
 				
-				power += (Integer)outs[3] * cycles;
+				power += ((Integer)outs[3] * cycles) * 1.25; //yields a 25% power conversion bonus
 				
 				if(power > maxPower)
 					power = maxPower;
@@ -144,19 +145,6 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 	}
 
 	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		
-		ForgeDirection dir = ForgeDirection.getOrientation(this.getBlockMetadata() - BlockDummyable.offset);
-		ffgeua(xCoord + dir.offsetX * -4, yCoord, zCoord + dir.offsetZ * -4, getTact());
-	}
-
-	@Override
 	public void fillFluidInit(FluidType type) {
 		
 		ForgeDirection dir = ForgeDirection.getOrientation(this.getBlockMetadata() - BlockDummyable.offset);
@@ -182,7 +170,7 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 	}
 
 	@Override
-	public void setFluidFill(int i, FluidType type) {
+	public void setFillForTransfer(int i, FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			tanks[0].setFill(i);
 		else if(type.name().equals(tanks[1].getTankType().name()))
@@ -200,7 +188,7 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 	}
 
 	@Override
-	public int getMaxFluidFill(FluidType type) {
+	public int getMaxFillForReceive(FluidType type) {
 		if(type.name().equals(tanks[0].getTankType().name()))
 			return tanks[0].getMaxFill();
 		
@@ -208,24 +196,15 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 	}
 
 	@Override
-	public void setFillstate(int fill, int index) {
+	public void setFillForSync(int fill, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setFill(fill);
 	}
 
 	@Override
-	public void setType(FluidType type, int index) {
+	public void setTypeForSync(FluidType type, int index) {
 		if(index < 2 && tanks[index] != null)
 			tanks[index].setTankType(type);
-	}
-
-	@Override
-	public List<FluidTank> getTanks() {
-		List<FluidTank> list = new ArrayList();
-		list.add(tanks[0]);
-		list.add(tanks[1]);
-		
-		return list;
 	}
 	
 	@Override
@@ -239,23 +218,18 @@ public class TileEntityMachineLargeTurbine extends TileEntityMachineBase impleme
 	}
 
 	@Override
-	public long getSPower() {
+	public long getPower() {
 		return power;
 	}
 
 	@Override
-	public void setSPower(long i) {
+	public void setPower(long i) {
 		this.power = i;
 	}
 
 	@Override
-	public List<IConsumer> getList() {
-		return list1;
-	}
-
-	@Override
-	public void clearList() {
-		this.list1.clear();
+	public long getMaxPower() {
+		return this.maxPower;
 	}
 	
 	@Override

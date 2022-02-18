@@ -61,24 +61,24 @@ public class Gun22LRFactory {
 	static float inaccuracy = 5;
 	public static BulletConfiguration get22LRConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.ammo_22lr;
 		bullet.spread *= inaccuracy;
-		bullet.dmgMin = 2;
-		bullet.dmgMax = 4;
+		bullet.dmgMin = 6;
+		bullet.dmgMax = 8;
 		
 		return bullet;
 	}
 	
 	public static BulletConfiguration get22LRAPConfig() {
 		
-		BulletConfiguration bullet = BulletConfigFactory.standardBulletConfig();
+		BulletConfiguration bullet = BulletConfigFactory.standardPistolConfig();
 		
 		bullet.ammo = ModItems.ammo_22lr_ap;
 		bullet.spread *= inaccuracy;
-		bullet.dmgMin = 6;
-		bullet.dmgMax = 8;
+		bullet.dmgMin = 12;
+		bullet.dmgMax = 16;
 		bullet.leadChance = 10;
 		bullet.wear = 15;
 		

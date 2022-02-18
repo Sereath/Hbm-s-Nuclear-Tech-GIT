@@ -6,7 +6,9 @@ import java.util.Random;
 
 import com.hbm.handler.MultiblockHandlerXR;
 import com.hbm.handler.ThreeInts;
+import com.hbm.main.MainRegistry;
 
+import cpw.mods.fml.common.network.internal.FMLNetworkHandler;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockContainer;
 import net.minecraft.block.material.Material;
@@ -130,7 +132,9 @@ public abstract class BlockDummyable extends BlockContainer {
 		if(!(player instanceof EntityPlayer))
 			return;
 
+		safeRem = true;
 		world.setBlockToAir(x, y, z);
+		safeRem = false;
 
 		EntityPlayer pl = (EntityPlayer) player;
 
@@ -176,7 +180,9 @@ public abstract class BlockDummyable extends BlockContainer {
 		}
 
 		if(!world.isRemote) {
-			world.setBlock(x + dir.offsetX * o, y + dir.offsetY * o, z + dir.offsetZ * o, this, dir.ordinal() + offset, 3);
+			//this is separate because the multiblock rotation and the final meta might not be the same
+			int meta = getMetaForCore(world, x + dir.offsetX * o, y + dir.offsetY * o, z + dir.offsetZ * o, (EntityPlayer) player, dir.ordinal() + offset);
+			world.setBlock(x + dir.offsetX * o, y + dir.offsetY * o, z + dir.offsetZ * o, this, meta, 3);
 			fillSpace(world, x, y, z, dir, o);
 		}
 		y -= getHeightOffset();
@@ -186,6 +192,28 @@ public abstract class BlockDummyable extends BlockContainer {
 		super.onBlockPlacedBy(world, x, y, z, player, itemStack);
 	}
 	
+	/**
+	 * A bit more advanced than the dir modifier, but it is important that the resulting direction meta is in the core range.
+	 * Using the "extra" metas is technically possible but requires a bit of tinkering, e.g. preventing a recursive loop
+	 * in the core finder and making sure the TE uses the right metas.
+	 * @param world
+	 * @param x
+	 * @param y
+	 * @param z
+	 * @param player
+	 * @param original
+	 * @return
+	 */
+	protected int getMetaForCore(World world, int x, int y, int z, EntityPlayer player, int original) {
+		return original;
+	}
+	
+	/**
+	 * Allows to modify the general placement direction as if the player had another rotation.
+	 * Quite basic due to only having 1 param but it's more meant to fix/limit the amount of directions
+	 * @param dir
+	 * @return
+	 */
 	protected ForgeDirection getDirModified(ForgeDirection dir) {
 		return dir;
 	}
@@ -195,7 +223,6 @@ public abstract class BlockDummyable extends BlockContainer {
 	}
 
 	protected void fillSpace(World world, int x, int y, int z, ForgeDirection dir, int o) {
-
 		MultiblockHandlerXR.fillSpace(world, x + dir.offsetX * o, y + dir.offsetY * o, z + dir.offsetZ * o, getDimensions(), this, dir);
 	}
 
@@ -214,12 +241,26 @@ public abstract class BlockDummyable extends BlockContainer {
 		this.safeRem = true;
 		world.setBlock(x, y, z, this, meta + extra, 3);
 		this.safeRem = false;
+	}
+	
+	public void removeExtra(World world, int x, int y, int z) {
 
+		if(world.getBlock(x, y, z) != this)
+			return;
+
+		int meta = world.getBlockMetadata(x, y, z);
+
+		if(meta <= 5 || meta >= 12)
+			return;
+
+		// world.setBlockMetadataWithNotify(x, y, z, meta + extra, 3);
+		this.safeRem = true;
+		world.setBlock(x, y, z, this, meta - extra, 3);
+		this.safeRem = false;
 	}
 
 	// checks if the dummy metadata is within the extra range
 	public boolean hasExtra(int meta) {
-
 		return meta > 5 && meta < 12;
 	}
 
@@ -313,4 +354,20 @@ public abstract class BlockDummyable extends BlockContainer {
 		return 0;
 	}
 
+	protected boolean standardOpenBehavior(World world, int x, int y, int z, EntityPlayer player, int id) {
+		
+		if(world.isRemote) {
+			return true;
+		} else if(!player.isSneaking()) {
+			int[] pos = this.findCore(world, x, y, z);
+
+			if(pos == null)
+				return false;
+
+			FMLNetworkHandler.openGui(player, MainRegistry.instance, id, world, pos[0], pos[1], pos[2]);
+			return true;
+		} else {
+			return true;
+		}
+	}
 }

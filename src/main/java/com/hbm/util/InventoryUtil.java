@@ -2,12 +2,13 @@ package com.hbm.util;
 
 import java.util.List;
 
-import com.hbm.inventory.AnvilRecipes.AnvilOutput;
 import com.hbm.inventory.RecipesCommon.AStack;
+import com.hbm.inventory.recipes.anvil.AnvilRecipes.AnvilOutput;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.IInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraftforge.oredict.OreDictionary;
 
 //'t was about time
 public class InventoryUtil {
@@ -34,6 +35,10 @@ public class InventoryUtil {
 			return null;
 		else
 			return rem;
+	}
+	
+	public static ItemStack tryAddItemToInventory(ItemStack[] inv, ItemStack stack) {
+		return tryAddItemToInventory(inv, 0, inv.length - 1, stack);
 	}
 	
 	/**
@@ -155,6 +160,32 @@ public class InventoryUtil {
 		return false;
 	}
 	
+	public static boolean tryConsumeAStack(ItemStack[] inv, int start, int end, AStack stack) {
+		
+		if(stack == null)
+			return true;
+		
+		AStack copy = stack.copy();
+		
+		for(int i = start; i <= end; i++) {
+			ItemStack in = inv[i];
+			
+			if(stack.matchesRecipe(in, true)) {
+				int size = Math.min(copy.stacksize, in.stackSize);
+				
+				in.stackSize -= size;
+				copy.stacksize -= size;
+				
+				if(in.stackSize == 0)
+					inv[i] = null;
+				if(copy.stacksize == 0)
+					return true;
+			}
+		}
+		
+		return false;
+	}
+	
 	/**
 	 * Compares item, metadata and NBT data of two stacks. Also handles null values!
 	 * @param stack1
@@ -163,29 +194,14 @@ public class InventoryUtil {
 	 */
 	public static boolean doesStackDataMatch(ItemStack stack1, ItemStack stack2) {
 		
-		if(stack1 == null && stack2 == null)
-			return true;
-		
-		if(stack1 == null && stack2 != null)
-			return false;
-		
-		if(stack1 != null && stack2 == null)
-			return false;
-		
-		if(stack1.getItem() != stack2.getItem())
-			return false;
-		
-		if(stack1.getItemDamage() != stack2.getItemDamage())
-			return false;
-		
-		if(!stack1.hasTagCompound() && !stack2.hasTagCompound())
-			return true;
-		
-		if(stack1.hasTagCompound() && !stack2.hasTagCompound())
-			return false;
-		
-		if(!stack1.hasTagCompound() && stack2.hasTagCompound())
-			return false;
+		if(stack1 == null && stack2 == null) return true;
+		if(stack1 == null && stack2 != null) return false;
+		if(stack1 != null && stack2 == null) return false;
+		if(stack1.getItem() != stack2.getItem()) return false;
+		if(stack1.getItemDamage() != stack2.getItemDamage()) return false;
+		if(!stack1.hasTagCompound() && !stack2.hasTagCompound()) return true;
+		if(stack1.hasTagCompound() && !stack2.hasTagCompound()) return false;
+		if(!stack1.hasTagCompound() && stack2.hasTagCompound()) return false;
 		
 		return stack1.getTagCompound().equals(stack2.getTagCompound());
 	}
@@ -274,5 +290,155 @@ public class InventoryUtil {
 				}
 			}
 		}
+	}
+	
+	public static boolean hasOreDictMatches(EntityPlayer player, String dict, int count) {
+		return countOreDictMatches(player, dict) >= count;
+	}
+	
+	public static int countOreDictMatches(EntityPlayer player, String dict) {
+		
+		int count = 0;
+		
+		for(int i = 0; i < player.inventory.mainInventory.length; i++) {
+			
+			ItemStack stack = player.inventory.mainInventory[i];
+			
+			if(stack != null) {
+				
+				int[] ids = OreDictionary.getOreIDs(stack);
+				
+				for(int id : ids) {
+					if(OreDictionary.getOreName(id).equals(dict)) {
+						count += stack.stackSize;
+						break;
+					}
+				}
+			}
+		}
+		
+		return count;
+	}
+	
+	public static void consumeOreDictMatches(EntityPlayer player, String dict, int count) {
+		
+		for(int i = 0; i < player.inventory.mainInventory.length; i++) {
+			
+			ItemStack stack = player.inventory.mainInventory[i];
+			
+			if(stack != null) {
+				
+				int[] ids = OreDictionary.getOreIDs(stack);
+				
+				for(int id : ids) {
+					if(OreDictionary.getOreName(id).equals(dict)) {
+						
+						int toConsume = Math.min(count, stack.stackSize);
+						player.inventory.decrStackSize(i, toConsume);
+						count -= toConsume;
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Turns objects into 2D ItemStack arrays. Index 1: Ingredient slot, index 2: variation (ore dict)
+	 * Handles:<br>
+	 * <ul>
+	 * <li>ItemStack</li>
+	 * <li>ItemStack[]</li>
+	 * <li>AStack</li>
+	 * <li>AStack[]</li>
+	 * </ul>
+	 * @param o
+	 * @return
+	 */
+	public static ItemStack[][] extractObject(Object o) {
+		
+		if(o instanceof ItemStack) {
+			ItemStack[][] stacks = new ItemStack[1][1];
+			stacks[0][0] = ((ItemStack)o).copy();
+			return stacks;
+		}
+		
+		if(o instanceof ItemStack[]) {
+			ItemStack[] ingredients = (ItemStack[]) o;
+			ItemStack[][] stacks = new ItemStack[1][0];
+			stacks[0] = ingredients;
+			return stacks;
+		}
+		
+		if(o instanceof AStack) {
+			AStack astack = (AStack) o;
+			ItemStack[] ext = astack.extractForNEI().toArray(new ItemStack[0]);
+			ItemStack[][] stacks = new ItemStack[1][0];
+			stacks[0] = ext; //untested, do java arrays allow that? the capacity set is 0 after all
+			return stacks;
+		}
+		
+		if(o instanceof AStack[]) {
+			AStack[] ingredients = (AStack[]) o;
+			ItemStack[][] stacks = new ItemStack[ingredients.length][0];
+			
+			for(int i = 0; i < ingredients.length; i++) {
+				stacks[i] = ingredients[i].extractForNEI().toArray(new ItemStack[0]);
+			}
+			
+			return stacks;
+		}
+		
+		return new ItemStack[0][0];
+	}
+	
+	public static boolean doesArrayHaveIngredients(ItemStack[] array, int start, int end, AStack[] ingredients) {
+		ItemStack[] copy = ItemStackUtil.carefulCopyArrayTruncate(array, start, end);
+		
+		AStack[] req = new AStack[ingredients.length];
+		for(int i = 0; i < req.length; i++) {
+			req[i] = ingredients[i] == null ? null : ingredients[i].copy();
+		}
+		
+		for(AStack ingredient : req) {
+			
+			if(ingredient == null)
+				continue;
+			
+			for(ItemStack input : copy) {
+				
+				if(input == null)
+					continue;
+				
+				if(ingredient.matchesRecipe(input, true)) {
+					int size = Math.min(input.stackSize, ingredient.stacksize);
+					
+					ingredient.stacksize -= size;
+					input.stackSize -= size;
+					
+					if(ingredient.stacksize == 0)
+						break;
+				}
+			}
+			
+			//we have iterated over the entire input array and removed all matching entries, yet the ingredient is still not exhausted, meaning the input wasn't enough
+			if(ingredient.stacksize > 0)
+				return false;
+		}
+		
+		return true;
+	}
+	
+	public static boolean doesArrayHaveSpace(ItemStack[] array, int start, int end, ItemStack[] items) {
+		ItemStack[] copy = ItemStackUtil.carefulCopyArrayTruncate(array, start, end);
+		
+		for(ItemStack item : items) {
+			ItemStack remainder = tryAddItemToInventory(copy, item);
+			if(remainder != null) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }

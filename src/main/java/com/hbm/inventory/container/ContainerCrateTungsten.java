@@ -1,6 +1,6 @@
 package com.hbm.inventory.container;
 
-import com.hbm.tileentity.machine.TileEntityCrateTungsten;
+import com.hbm.tileentity.machine.storage.TileEntityCrateTungsten;
 
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.InventoryPlayer;
@@ -8,6 +8,7 @@ import net.minecraft.inventory.Container;
 import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 
+//@invtweaks.api.container.ChestContainer
 public class ContainerCrateTungsten extends Container {
 
 	private TileEntityCrateTungsten crate;

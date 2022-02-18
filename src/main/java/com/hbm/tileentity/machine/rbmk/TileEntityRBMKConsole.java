@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.hbm.handler.FluidTypeHandler.FluidType;
 import com.hbm.interfaces.IControlReceiver;
+import com.hbm.inventory.fluid.Fluids;
 import com.hbm.tileentity.TileEntityMachineBase;
 import com.hbm.tileentity.machine.rbmk.TileEntityRBMKControlManual.RBMKColor;
 import com.hbm.util.I18nUtil;
@@ -46,7 +46,11 @@ public class TileEntityRBMKConsole extends TileEntityMachineBase implements ICon
 		if(!worldObj.isRemote) {
 			
 			if(this.worldObj.getTotalWorldTime() % 10 == 0) {
+
+				this.worldObj.theProfiler.startSection("rbmkConsole_rescan");
 				rescan();
+				this.worldObj.theProfiler.endSection();
+				
 				prepareNetworkPack();
 			}
 		}
@@ -236,7 +240,7 @@ public class TileEntityRBMKConsole extends TileEntityMachineBase implements ICon
 			case BOILER:
 				stats.add(EnumChatFormatting.BLUE + I18nUtil.resolveKey("rbmk.boiler.water", this.data.getInteger("water"), this.data.getInteger("maxWater")));
 				stats.add(EnumChatFormatting.WHITE + I18nUtil.resolveKey("rbmk.boiler.steam", this.data.getInteger("steam"), this.data.getInteger("maxSteam")));
-				stats.add(EnumChatFormatting.YELLOW + I18nUtil.resolveKey("rbmk.boiler.type", I18nUtil.resolveKey(FluidType.values()[this.data.getShort("type")].getUnlocalizedName())));
+				stats.add(EnumChatFormatting.YELLOW + I18nUtil.resolveKey("rbmk.boiler.type", I18nUtil.resolveKey(Fluids.fromID(this.data.getShort("type")).getUnlocalizedName())));
 				break;
 			case CONTROL:
 				
@@ -270,7 +274,9 @@ public class TileEntityRBMKConsole extends TileEntityMachineBase implements ICon
 		ABSORBER(60),
 		REFLECTOR(70),
 		OUTGASSER(80),
-		BREEDER(100);
+		BREEDER(100),
+		STORAGE(110),
+		COOLER(120);
 		
 		public int offset;
 		

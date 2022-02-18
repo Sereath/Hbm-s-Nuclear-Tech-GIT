@@ -1,14 +1,12 @@
 package com.hbm.tileentity.machine;
 
-import java.util.ArrayList;
-import java.util.List;
-import com.hbm.interfaces.IConsumer;
-import com.hbm.interfaces.ISource;
-import com.hbm.items.ModItems;
-import com.hbm.lib.Library;
+import com.hbm.config.VersatileConfig;
+import com.hbm.items.machine.ItemRTGPellet;
 import com.hbm.packet.AuxElectricityPacket;
 import com.hbm.packet.PacketDispatcher;
+import com.hbm.util.RTGUtil;
 
+import api.hbm.energy.IEnergyGenerator;
 import cpw.mods.fml.common.network.NetworkRegistry.TargetPoint;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.inventory.ISidedInventory;
@@ -16,21 +14,18 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraftforge.common.util.ForgeDirection;
 
-public class TileEntityMachineRTG extends TileEntity implements ISidedInventory, ISource {
+public class TileEntityMachineRTG extends TileEntity implements ISidedInventory, IEnergyGenerator {
 
 	private ItemStack slots[];
 	
 	public int heat;
-	public final int heatMax = 150;
+	public final int heatMax = VersatileConfig.rtgDecay() ? 600 : 200;
 	public long power;
-	public final long powerMax = 90000;
-	public int age = 0;
-	public List<IConsumer> list = new ArrayList();
+	public final long powerMax = 100000;
 	
-	private static final int[] slots_top = new int[] { 0 };
-	private static final int[] slots_bottom = new int[] { 0 };
-	private static final int[] slots_side = new int[] { 0 };
+	public static final int[] slot_io = new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
 	
 	private String customName;
 	
@@ -106,10 +101,7 @@ public class TileEntityMachineRTG extends TileEntity implements ISidedInventory,
 
 	@Override
 	public boolean isItemValidForSlot(int i, ItemStack itemStack) {
-		
-		if(itemStack.getItem() != null && (itemStack.getItem() == ModItems.pellet_rtg || itemStack.getItem() == ModItems.pellet_rtg_weak))
-			return true;
-		return false;
+		return itemStack.getItem() instanceof ItemRTGPellet;
 	}
 	
 	@Override
@@ -175,9 +167,8 @@ public class TileEntityMachineRTG extends TileEntity implements ISidedInventory,
 	}
 	
 	@Override
-	public int[] getAccessibleSlotsFromSide(int p_94128_1_)
-    {
-        return p_94128_1_ == 0 ? slots_bottom : (p_94128_1_ == 1 ? slots_top : slots_side);
+	public int[] getAccessibleSlotsFromSide(int p_94128_1_){
+        return slot_io;
     }
 
 	@Override
@@ -203,50 +194,23 @@ public class TileEntityMachineRTG extends TileEntity implements ISidedInventory,
 	}
 	
 	public boolean hasHeat() {
-		return heat > 0;
+		return RTGUtil.hasHeat(slots, slot_io);
 	}
 
 	@Override
 	public void updateEntity() {
 
-		if(!worldObj.isRemote)
-		{
-			age++;
-			if(age >= 20)
-			{
-				age = 0;
-			}
+		if(!worldObj.isRemote) {
 			
-			if(age == 9 || age == 19)
-				ffgeuaInit();
+			for(ForgeDirection dir : ForgeDirection.VALID_DIRECTIONS)
+				this.sendPower(worldObj, xCoord + dir.offsetX, yCoord + dir.offsetY, zCoord + dir.offsetZ, dir.getOpposite());
 			
-			heat = 0;
-			
-			for(int i = 0; i < slots.length; i++) {
-				if(slots[i] != null) {
-					if(slots[i].getItem() == ModItems.pellet_rtg)
-						heat += 5;
-					if(slots[i].getItem() == ModItems.pellet_rtg_weak)
-						heat += 3;
-					if(slots[i].getItem() == ModItems.pellet_rtg_polonium)
-						heat += 25;
-					if(slots[i].getItem() == ModItems.pellet_rtg_americium)
-						heat += 50;
-					
-					if(slots[i].getItem() == ModItems.pellet_rtg_gold) {
-						
-						if(worldObj.rand.nextInt(60*60*20) == 0)
-							slots[i] = null;
-						else
-							heat += 150;
-					}
-				}
-			}
+			heat = RTGUtil.updateRTGs(slots, slot_io);
 			
 			if(heat > heatMax)
 				heat = heatMax;
 			
-			power += heat;
+			power += heat * 5;
 			if(power > powerMax)
 				power = powerMax;
 			
@@ -255,48 +219,17 @@ public class TileEntityMachineRTG extends TileEntity implements ISidedInventory,
 	}
 
 	@Override
-	public void ffgeua(int x, int y, int z, boolean newTact) {
-		
-		Library.ffgeua(x, y, z, newTact, this, worldObj);
-	}
-
-	@Override
-	public void ffgeuaInit() {
-		ffgeua(this.xCoord, this.yCoord + 1, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord - 1, this.zCoord, getTact());
-		ffgeua(this.xCoord - 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord + 1, this.yCoord, this.zCoord, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord - 1, getTact());
-		ffgeua(this.xCoord, this.yCoord, this.zCoord + 1, getTact());
-	}
-	
-	@Override
-	public boolean getTact() {
-		if(age >= 0 && age < 10)
-		{
-			return true;
-		}
-		
-		return false;
-	}
-
-	@Override
-	public long getSPower() {
+	public long getPower() {
 		return power;
 	}
 
 	@Override
-	public void setSPower(long i) {
+	public long getMaxPower() {
+		return powerMax;
+	}
+
+	@Override
+	public void setPower(long i) {
 		this.power = i;
-	}
-
-	@Override
-	public List<IConsumer> getList() {
-		return list;
-	}
-
-	@Override
-	public void clearList() {
-		this.list.clear();
 	}
 }

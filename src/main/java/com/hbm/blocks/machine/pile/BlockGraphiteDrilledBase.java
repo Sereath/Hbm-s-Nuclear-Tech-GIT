@@ -1,7 +1,6 @@
 package com.hbm.blocks.machine.pile;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 import com.hbm.blocks.ModBlocks;
@@ -11,7 +10,7 @@ import com.hbm.lib.RefStrings;
 
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
-import net.minecraft.block.material.Material;
+import net.minecraft.block.Block;
 import net.minecraft.client.renderer.texture.IIconRegister;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.item.Item;
@@ -27,6 +26,11 @@ public abstract class BlockGraphiteDrilledBase extends BlockFlammable {
 
 	public BlockGraphiteDrilledBase() {
 		super(ModBlocks.block_graphite.getMaterial(), ((BlockFlammable) ModBlocks.block_graphite).encouragement, ((BlockFlammable) ModBlocks.block_graphite).flammability);
+		
+		this.setCreativeTab(null);
+		this.setStepSound(Block.soundTypeMetal);
+		this.setHardness(5.0F);
+		this.setResistance(10.0F);
 	}
 	
 	@Override
